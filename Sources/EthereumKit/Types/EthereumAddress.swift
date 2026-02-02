@@ -12,6 +12,7 @@ public struct EthereumAddress: ChainAddress, Sendable {
     public let data: Data
 
     public init(_ data: Data) {
+        assert(data.count <= 20, "Ethereum address must be 20 bytes, got \(data.count)")
         if data.count >= 20 {
             self.data = data.prefix(20)
         } else {
