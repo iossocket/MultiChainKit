@@ -1,5 +1,7 @@
 # MultiChainKit
 
+[![Tests](https://github.com/iossocket/MultiChainKit/actions/workflows/test.yml/badge.svg)](https://github.com/iossocket/MultiChainKit/actions/workflows/test.yml)
+
 Swift SDK for Ethereum and StarkNet.
 
 ## Why?
@@ -99,17 +101,19 @@ MultiChainKit
 
 ## Status
 
-| Chain | Mainnet | Testnet |
-|-------|---------|---------|
-| Ethereum | ✓ | ✓ (Sepolia) |
-| StarkNet | ✓ | ✓ (Sepolia) |
+| Chain    | Mainnet | Testnet     |
+| -------- | ------- | ----------- |
+| Ethereum | ✓       | ✓ (Sepolia) |
+| StarkNet | ✓       | ✓ (Sepolia) |
 
 What's done:
+
 - Wallet generation and recovery (BIP39/BIP32)
 - Basic transfers
 - Balance queries
 
 What's next:
+
 - ERC20 tokens
 - Contract calls
 - Hardware wallets
