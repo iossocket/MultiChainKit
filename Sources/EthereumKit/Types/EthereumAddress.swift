@@ -69,12 +69,6 @@ public struct EthereumAddress: ChainAddress, Sendable {
 
     public func hash(into hasher: inout Hasher) { hasher.combine(data) }
 
-    // MARK: - Equatable
-
-    public static func == (lhs: EthereumAddress, rhs: EthereumAddress) -> Bool {
-        lhs.data == rhs.data
-    }
-
     // MARK: - Codable
 
     public init(from decoder: Decoder) throws {
