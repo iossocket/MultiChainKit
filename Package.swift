@@ -55,7 +55,7 @@ let package = Package(
             dependencies: [
                 "MultiChainCore",
                 "BigInt",
-                .product(name: "secp256k1", package: "secp256k1.swift")
+                .product(name: "P256K", package: "secp256k1.swift")
             ],
             path: "Sources/EthereumKit"
         ),
