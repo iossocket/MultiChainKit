@@ -8,7 +8,7 @@ import Foundation
 // MARK: - ChainRequest
 
 /// RPC request to a blockchain node.
-public struct ChainRequest<C: Chain, Result: Decodable>: Sendable {
+public struct ChainRequest: Sendable {
   public let method: String
   public let params: [AnyEncodable]
 
@@ -25,8 +25,8 @@ public protocol Provider<C>: Sendable where C: Chain {
   associatedtype C: Chain
 
   var chain: C { get }
-  func send<R: Decodable>(request: ChainRequest<C, R>) async throws -> R
-  func send<R: Decodable>(requests: [ChainRequest<C, R>]) async throws -> [Swift.Result<
+  func send<R: Decodable>(request: ChainRequest) async throws -> R
+  func send<R: Decodable>(requests: [ChainRequest]) async throws -> [Swift.Result<
     R, ProviderError
   >]
 }
@@ -102,7 +102,7 @@ public struct AnyEncodable: Encodable, Sendable {
 
 extension Provider {
   public func send<R: Decodable>(
-    requests: ChainRequest<C, R>...
+    requests: ChainRequest...
   ) async throws -> [Swift.Result<R, ProviderError>] {
     try await send(requests: Array(requests))
   }

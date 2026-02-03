@@ -12,8 +12,7 @@ public protocol Account<C>: Sendable where C: Chain {
   associatedtype C: Chain
 
   var address: C.Address { get }
-  func balanceRequest() -> ChainRequest<C, C.Value>
-  func nonceRequest() -> ChainRequest<C, C.Value>
+  func balanceRequest() -> ChainRequest
 }
 
 // MARK: - SignableAccount
@@ -25,7 +24,7 @@ public protocol SignableAccount<C>: Account {
   var signer: S { get }
   func sign(transaction: inout C.Transaction) throws
   func signMessage(_ message: Data) throws -> C.Signature
-  func sendTransactionRequest(_ transaction: C.Transaction) -> ChainRequest<C, C.Receipt>
+  func sendTransactionRequest(_ transaction: C.Transaction) -> ChainRequest
 }
 
 // MARK: - DeployableAccount
@@ -33,7 +32,7 @@ public protocol SignableAccount<C>: Account {
 /// Account that requires on-chain deployment (e.g. StarkNet account contracts).
 public protocol DeployableAccount<C>: SignableAccount {
   var isDeployed: Bool { get async throws }
-  func deployRequest() throws -> ChainRequest<C, C.Receipt>
+  func deployRequest() throws -> ChainRequest
   var classHash: C.Value { get }
 }
 
