@@ -3,119 +3,123 @@
 //  EthereumKitTests
 //
 
-import XCTest
-@testable import EthereumKit
 import MultiChainCore
+import XCTest
+
+@testable import EthereumKit
 
 final class EthereumChainTests: XCTestCase {
 
-    // MARK: - Mainnet
+  // MARK: - Mainnet
 
-    func testMainnetChainId() {
-        let chain = Ethereum.mainnet
-        XCTAssertEqual(chain.chainId, 1)
-    }
+  func testMainnetChainId() {
+    let chain = Ethereum.mainnet
+    XCTAssertEqual(chain.chainId, 1)
+  }
 
-    func testMainnetName() {
-        let chain = Ethereum.mainnet
-        XCTAssertEqual(chain.name, "Ethereum Mainnet")
-    }
+  func testMainnetName() {
+    let chain = Ethereum.mainnet
+    XCTAssertEqual(chain.name, "Ethereum Mainnet")
+  }
 
-    func testMainnetIsNotTestnet() {
-        let chain = Ethereum.mainnet
-        XCTAssertFalse(chain.isTestnet)
-    }
+  func testMainnetIsNotTestnet() {
+    let chain = Ethereum.mainnet
+    XCTAssertFalse(chain.isTestnet)
+  }
 
-    func testMainnetRpcURL() {
-        let chain = Ethereum.mainnet
-        XCTAssertTrue(chain.rpcURL.absoluteString.contains("mainnet"))
-    }
+  func testMainnetRpcURL() {
+    let chain = Ethereum.mainnet
+    XCTAssertTrue(chain.rpcURL.absoluteString.contains("mainnet"))
+  }
 
-    func testMainnetId() {
-        let chain = Ethereum.mainnet
-        XCTAssertEqual(chain.id, "ethereum:1")
-    }
+  func testMainnetId() {
+    let chain = Ethereum.mainnet
+    XCTAssertEqual(chain.id, "ethereum:1")
+  }
 
-    // MARK: - Sepolia
+  // MARK: - Sepolia
 
-    func testSepoliaChainId() {
-        let chain = Ethereum.sepolia
-        XCTAssertEqual(chain.chainId, 11155111)
-    }
+  func testSepoliaChainId() {
+    let chain = Ethereum.sepolia
+    XCTAssertEqual(chain.chainId, 11_155_111)
+  }
 
-    func testSepoliaName() {
-        let chain = Ethereum.sepolia
-        XCTAssertEqual(chain.name, "Sepolia")
-    }
+  func testSepoliaName() {
+    let chain = Ethereum.sepolia
+    XCTAssertEqual(chain.name, "Sepolia")
+  }
 
-    func testSepoliaIsTestnet() {
-        let chain = Ethereum.sepolia
-        XCTAssertTrue(chain.isTestnet)
-    }
+  func testSepoliaIsTestnet() {
+    let chain = Ethereum.sepolia
+    XCTAssertTrue(chain.isTestnet)
+  }
 
-    func testSepoliaRpcURL() {
-        let chain = Ethereum.sepolia
-        XCTAssertTrue(chain.rpcURL.absoluteString.contains("sepolia"))
-    }
+  func testSepoliaRpcURL() {
+    let chain = Ethereum.sepolia
+    XCTAssertTrue(chain.rpcURL.absoluteString.contains("sepolia"))
+  }
 
-    func testSepoliaId() {
-        let chain = Ethereum.sepolia
-        XCTAssertEqual(chain.id, "ethereum:11155111")
-    }
+  func testSepoliaId() {
+    let chain = Ethereum.sepolia
+    XCTAssertEqual(chain.id, "ethereum:11155111")
+  }
 
-    // MARK: - Custom Chain
+  // MARK: - Custom Chain
 
-    func testCustomChain() {
-        let rpcURL = URL(string: "https://my-node.example.com")!
-        let chain = Ethereum(chainId: 1337, name: "Local", rpcURL: rpcURL, isTestnet: true)
+  func testCustomChain() {
+    let rpcURL = URL(string: "https://my-node.example.com")!
+    let chain = Ethereum(chainId: 1337, name: "Local", rpcURL: rpcURL, isTestnet: true)
 
-        XCTAssertEqual(chain.chainId, 1337)
-        XCTAssertEqual(chain.name, "Local")
-        XCTAssertEqual(chain.rpcURL, rpcURL)
-        XCTAssertTrue(chain.isTestnet)
-        XCTAssertEqual(chain.id, "ethereum:1337")
-    }
+    XCTAssertEqual(chain.chainId, 1337)
+    XCTAssertEqual(chain.name, "Local")
+    XCTAssertEqual(chain.rpcURL, rpcURL)
+    XCTAssertTrue(chain.isTestnet)
+    XCTAssertEqual(chain.id, "ethereum:1337")
+  }
 
-    // MARK: - Equality
+  // MARK: - Equality
 
-    func testEqualityWithSameChain() {
-        let a = Ethereum.mainnet
-        let b = Ethereum.mainnet
-        XCTAssertEqual(a, b)
-    }
+  func testEqualityWithSameChain() {
+    let a = Ethereum.mainnet
+    let b = Ethereum.mainnet
+    XCTAssertEqual(a, b)
+  }
 
-    func testEqualityWithSameChainId() {
-        let a = Ethereum.mainnet
-        let b = Ethereum(chainId: 1, name: "Different Name", rpcURL: URL(string: "https://other.com")!, isTestnet: false)
-        XCTAssertEqual(a, b) // Equal by chainId
-    }
+  func testEqualityWithSameChainId() {
+    let a = Ethereum.mainnet
+    let b = Ethereum(
+      chainId: 1, name: "Different Name", rpcURL: URL(string: "https://other.com")!,
+      isTestnet: false)
+    XCTAssertEqual(a, b)  // Equal by chainId
+  }
 
-    func testInequalityWithDifferentChain() {
-        let a = Ethereum.mainnet
-        let b = Ethereum.sepolia
-        XCTAssertNotEqual(a, b)
-    }
+  func testInequalityWithDifferentChain() {
+    let a = Ethereum.mainnet
+    let b = Ethereum.sepolia
+    XCTAssertNotEqual(a, b)
+  }
 
-    // MARK: - Hashable
+  // MARK: - Hashable
 
-    func testHashable() {
-        let mainnet = Ethereum.mainnet
-        let sepolia = Ethereum.sepolia
-        let anotherMainnet = Ethereum(chainId: 1, name: "ETH", rpcURL: URL(string: "https://x.com")!, isTestnet: false)
+  func testHashable() {
+    let mainnet = Ethereum.mainnet
+    let sepolia = Ethereum.sepolia
+    let anotherMainnet = Ethereum(
+      chainId: 1, name: "ETH", rpcURL: URL(string: "https://x.com")!, isTestnet: false)
 
-        var set = Set<Ethereum>()
-        set.insert(mainnet)
-        set.insert(sepolia)
-        set.insert(anotherMainnet)
+    var set = Set<Ethereum>()
+    set.insert(mainnet)
+    set.insert(sepolia)
+    set.insert(anotherMainnet)
 
-        XCTAssertEqual(set.count, 2)
-    }
+    XCTAssertEqual(set.count, 2)
+  }
 
-    // MARK: - Chain Protocol Conformance
+  // MARK: - Chain Protocol Conformance
 
-    func testAssociatedTypes() {
-        // Verify associated types compile correctly
-        let _: Ethereum.Value.Type = Wei.self
-        let _: Ethereum.Address.Type = EthereumAddress.self
-    }
+  func testAssociatedTypes() {
+    // Verify associated types compile correctly
+    let _: Ethereum.Value.Type = Wei.self
+    let _: Ethereum.Address.Type = EthereumAddress.self
+  }
 }
