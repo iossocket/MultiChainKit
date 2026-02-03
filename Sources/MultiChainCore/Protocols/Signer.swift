@@ -8,7 +8,7 @@ import Foundation
 // MARK: - Signer
 
 /// Creates digital signatures using a private key.
-public protocol Signer<C>: Sendable where C: Chain {
+public protocol Signer<C>: Sendable {
   associatedtype C: Chain
 
   var publicKey: Data { get }
@@ -18,14 +18,14 @@ public protocol Signer<C>: Sendable where C: Chain {
 // MARK: - PrivateKeySigner
 
 /// Signer initialized from raw private key bytes.
-public protocol PrivateKeySigner<C>: Signer {
+public protocol PrivateKeySigner: Signer {
   init(privateKey: Data) throws
 }
 
 // MARK: - MnemonicSigner
 
 /// Signer that derives key from BIP39 mnemonic.
-public protocol MnemonicSigner<C>: Signer {
+public protocol MnemonicSigner: Signer {
   init(mnemonic: String, path: DerivationPath) throws
 }
 
