@@ -7,70 +7,70 @@ import Foundation
 import MultiChainCore
 
 public struct Ethereum: Chain, Sendable, Equatable, Hashable {
-    public typealias Value = Wei
-    public typealias Address = EthereumAddress
-    public typealias Transaction = EthereumTransaction
-    public typealias Signature = EthereumSignature
-    public typealias Receipt = EthereumReceipt
+  public typealias Value = Wei
+  public typealias Address = EthereumAddress
+  public typealias Transaction = EthereumTransaction
+  public typealias Signature = EthereumSignature
+  public typealias Receipt = EthereumReceipt
 
-    public let chainId: UInt64
-    public let name: String
-    public let rpcURL: URL
-    public let isTestnet: Bool
+  public let chainId: UInt64
+  public let name: String
+  public let rpcURL: URL
+  public let isTestnet: Bool
 
-    public var id: String { "ethereum:\(chainId)" }
+  public var id: String { "ethereum:\(chainId)" }
 
-    public init(chainId: UInt64, name: String, rpcURL: URL, isTestnet: Bool) {
-        self.chainId = chainId
-        self.name = name
-        self.rpcURL = rpcURL
-        self.isTestnet = isTestnet
-    }
+  public init(chainId: UInt64, name: String, rpcURL: URL, isTestnet: Bool) {
+    self.chainId = chainId
+    self.name = name
+    self.rpcURL = rpcURL
+    self.isTestnet = isTestnet
+  }
 
-    // MARK: - Predefined Networks
+  // MARK: - Predefined Networks
 
-    public static let mainnet = Ethereum(
-        chainId: 1,
-        name: "Ethereum Mainnet",
-        rpcURL: URL(string: "https://eth-mainnet.public.blastapi.io")!,
-        isTestnet: false
-    )
+  public static let mainnet = Ethereum(
+    chainId: 1,
+    name: "Ethereum Mainnet",
+    rpcURL: URL(string: "https://eth-mainnet.public.blastapi.io")!,
+    isTestnet: false
+  )
 
-    public static let sepolia = Ethereum(
-        chainId: 11155111,
-        name: "Sepolia",
-        rpcURL: URL(string: "https://eth-sepolia.public.blastapi.io")!,
-        isTestnet: true
-    )
+  public static let sepolia = Ethereum(
+    chainId: 11_155_111,
+    name: "Sepolia",
+    rpcURL: URL(string: "https://eth-sepolia.public.blastapi.io")!,
+    isTestnet: true
+  )
 
-    // MARK: - Equatable & Hashable (by chainId)
+  // MARK: - Equatable & Hashable (by chainId)
 
-    public static func == (lhs: Ethereum, rhs: Ethereum) -> Bool {
-        lhs.chainId == rhs.chainId
-    }
+  public static func == (lhs: Ethereum, rhs: Ethereum) -> Bool {
+    lhs.chainId == rhs.chainId
+  }
 
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(chainId)
-    }
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(chainId)
+  }
 }
 
 // MARK: - Placeholder Types
 
 public struct EthereumTransaction: ChainTransaction, Sendable {
-    public typealias C = Ethereum
+  public typealias C = Ethereum
 
-    public var hash: Data?
+  public var hash: Data?
 
-    public func hashForSigning() -> Data { Data() }
-    public func encode() -> Data { Data() }
+  public func hashForSigning() -> Data { Data() }
+  public func encode() -> Data { Data() }
 }
 
 public struct EthereumSignature: ChainSignature, Sendable {
-    public var rawData: Data { Data() }
+  public var rawData: Data { Data() }
 }
 
 public struct EthereumReceipt: ChainReceipt, Sendable {
-    public var transactionHash: Data { Data() }
-    public var isSuccess: Bool { false }
-    public var blockNumber: UInt64? { nil }
+  public var transactionHash: Data { Data() }
+  public var isSuccess: Bool { false }
+  public var blockNumber: UInt64? { nil }
 }
