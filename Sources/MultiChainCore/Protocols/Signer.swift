@@ -11,7 +11,7 @@ import Foundation
 public protocol Signer<C>: Sendable {
   associatedtype C: Chain
 
-  var publicKey: Data { get }
+  var publicKey: Data? { get }
   func sign(hash: Data) throws -> C.Signature
 }
 

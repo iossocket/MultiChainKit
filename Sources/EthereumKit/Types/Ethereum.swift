@@ -65,10 +65,6 @@ public struct EthereumTransaction: ChainTransaction, Sendable {
   public func encode() -> Data { Data() }
 }
 
-public struct EthereumSignature: ChainSignature, Sendable {
-  public var rawData: Data { Data() }
-}
-
 public struct EthereumReceipt: ChainReceipt, Sendable {
   public var transactionHash: Data { Data() }
   public var isSuccess: Bool { false }
