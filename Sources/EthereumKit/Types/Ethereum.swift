@@ -56,15 +56,6 @@ public struct Ethereum: Chain, Sendable, Equatable, Hashable {
 
 // MARK: - Placeholder Types
 
-public struct EthereumTransaction: ChainTransaction, Sendable {
-  public typealias C = Ethereum
-
-  public var hash: Data?
-
-  public func hashForSigning() -> Data { Data() }
-  public func encode() -> Data { Data() }
-}
-
 public struct EthereumReceipt: ChainReceipt, Sendable {
   public var transactionHash: Data { Data() }
   public var isSuccess: Bool { false }

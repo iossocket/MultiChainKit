@@ -71,6 +71,8 @@ public struct Wei: ChainValue, Sendable {
 
   public var description: String { String(value) }
 
+  public var bigEndianData: Data { value.serialize() }
+
   // MARK: - ExpressibleByIntegerLiteral
 
   public init(integerLiteral value: UInt64) { self.value = BigUInt(value) }
