@@ -28,6 +28,14 @@ extension ABIValue {
     return try decoder.decode(types: types)
   }
 
+  public static func decode(type: ABIType, data: Data) throws -> ABIValue {
+    let results = try decode(types: [type], data: data)
+    guard let first = results.first else {
+      throw ABIDecodingError.insufficientData
+    }
+    return first
+  }
+
   /// Decode function return values
   public static func decodeFunctionResult(
     outputTypes: [ABIType],
