@@ -19,7 +19,9 @@ public final class EthereumProvider: Provider, @unchecked Sendable {
     self.session = session
   }
 
-  public init(chainId: UInt64, name: String, url: URL, isTestnet: Bool, session: URLSession = .shared) {
+  public init(
+    chainId: UInt64, name: String, url: URL, isTestnet: Bool, session: URLSession = .shared
+  ) {
     self.chain = Ethereum(chainId: chainId, name: name, rpcURL: url, isTestnet: isTestnet)
     self.session = session
   }
@@ -48,7 +50,9 @@ public final class EthereumProvider: Provider, @unchecked Sendable {
     return try parseResponse(data)
   }
 
-  public func send<R: Decodable>(requests: [ChainRequest]) async throws -> [Result<R, ProviderError>] {
+  public func send<R: Decodable>(requests: [ChainRequest]) async throws -> [Result<
+    R, ProviderError
+  >] {
     guard !requests.isEmpty else {
       throw ProviderError.emptyBatchRequest
     }
@@ -107,7 +111,9 @@ public final class EthereumProvider: Provider, @unchecked Sendable {
     return result
   }
 
-  private func parseBatchResponse<R: Decodable>(_ data: Data, count: Int) throws -> [Result<R, ProviderError>] {
+  private func parseBatchResponse<R: Decodable>(_ data: Data, count: Int) throws -> [Result<
+    R, ProviderError
+  >] {
     let responses: [JsonRpcResponse<R>]
     do {
       responses = try JSONDecoder().decode([JsonRpcResponse<R>].self, from: data)
@@ -154,6 +160,52 @@ public final class EthereumProvider: Provider, @unchecked Sendable {
 
   public func callRequest(transaction: EthereumTransaction, block: BlockTag) -> ChainRequest {
     ChainRequest(method: "eth_call", params: [transactionPreprocess(transaction), block.rawValue])
+  }
+
+  // MARK: - Account State Requests
+
+  public func getBalanceRequest(address: EthereumAddress, block: BlockTag) -> ChainRequest {
+    ChainRequest(method: "eth_getBalance", params: [address.checksummed, block.rawValue])
+  }
+
+  public func getTransactionCountRequest(address: EthereumAddress, block: BlockTag) -> ChainRequest
+  {
+    ChainRequest(method: "eth_getTransactionCount", params: [address.checksummed, block.rawValue])
+  }
+
+  public func getCodeRequest(address: EthereumAddress, block: BlockTag) -> ChainRequest {
+    ChainRequest(method: "eth_getCode", params: [address.checksummed, block.rawValue])
+  }
+
+  public func getStorageAtRequest(address: EthereumAddress, position: String, block: BlockTag)
+    -> ChainRequest
+  {
+    ChainRequest(
+      method: "eth_getStorageAt", params: [address.checksummed, position, block.rawValue])
+  }
+
+  // MARK: - Block Requests
+
+  public func getBlockByNumberRequest(block: BlockTag, fullTransactions: Bool) -> ChainRequest {
+    ChainRequest(method: "eth_getBlockByNumber", params: [block.rawValue, fullTransactions])
+  }
+
+  public func getTransactionByHashRequest(hash: String) -> ChainRequest {
+    ChainRequest(method: "eth_getTransactionByHash", params: [hash])
+  }
+
+  // MARK: - EIP-1559 Fee Requests
+
+  public func feeHistoryRequest(blockCount: Int, newestBlock: BlockTag, rewardPercentiles: [Double])
+    -> ChainRequest
+  {
+    ChainRequest(
+      method: "eth_feeHistory",
+      params: ["0x" + String(blockCount, radix: 16), newestBlock.rawValue, rewardPercentiles])
+  }
+
+  public func maxPriorityFeePerGasRequest() -> ChainRequest {
+    ChainRequest(method: "eth_maxPriorityFeePerGas")
   }
 
   // MARK: - Private

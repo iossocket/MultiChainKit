@@ -12,7 +12,6 @@ public enum EthereumSignatureError: Error {
   case invalidInputMessage
 }
 
-
 public struct EthereumSignature: ChainSignature, Sendable, Equatable {
   public let r: Data
   public let s: Data

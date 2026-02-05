@@ -6,26 +6,6 @@
 import Foundation
 import MultiChainCore
 
-// MARK: - BlockTag
-
-public enum BlockTag: Sendable, Equatable {
-  case latest
-  case pending
-  case earliest
-  case number(UInt64)
-
-  public var rawValue: String {
-    switch self {
-    case .latest: return "latest"
-    case .pending: return "pending"
-    case .earliest: return "earliest"
-    case .number(let n): return "0x" + String(n, radix: 16)
-    }
-  }
-}
-
-// MARK: - EthereumAccount
-
 public struct EthereumAccount: Account, Sendable, Equatable, Hashable {
   public typealias C = Ethereum
 

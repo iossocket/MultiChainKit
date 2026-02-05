@@ -60,7 +60,7 @@ final class EthereumTransactionTests: XCTestCase {
       nonce: 0,
       maxPriorityFeePerGas: Wei.fromGwei(2),
       maxFeePerGas: Wei.fromGwei(100),
-      gasLimit: 1000000,
+      gasLimit: 1_000_000,
       to: nil,
       value: .zero,
       data: bytecode
@@ -222,7 +222,7 @@ final class EthereumTransactionTests: XCTestCase {
 
   func testSepoliaChainId() {
     let tx = EthereumTransaction(
-      chainId: 11155111,
+      chainId: 11_155_111,
       nonce: 0,
       maxPriorityFeePerGas: .zero,
       maxFeePerGas: .zero,
@@ -232,7 +232,7 @@ final class EthereumTransactionTests: XCTestCase {
       data: Data()
     )
 
-    XCTAssertEqual(tx.chainId, 11155111)
+    XCTAssertEqual(tx.chainId, 11_155_111)
   }
 
   // MARK: - Edge Cases
@@ -274,7 +274,7 @@ final class EthereumTransactionTests: XCTestCase {
       nonce: 0,
       maxPriorityFeePerGas: .zero,
       maxFeePerGas: .zero,
-      gasLimit: 1000000,
+      gasLimit: 1_000_000,
       to: testAddress,
       value: .zero,
       data: largeData

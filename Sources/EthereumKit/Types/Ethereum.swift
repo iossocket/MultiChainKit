@@ -53,11 +53,3 @@ public struct Ethereum: Chain, Sendable, Equatable, Hashable {
     hasher.combine(chainId)
   }
 }
-
-// MARK: - Placeholder Types
-
-public struct EthereumReceipt: ChainReceipt, Sendable {
-  public var transactionHash: Data { Data() }
-  public var isSuccess: Bool { false }
-  public var blockNumber: UInt64? { nil }
-}

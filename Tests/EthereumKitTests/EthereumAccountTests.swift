@@ -12,7 +12,8 @@ final class EthereumAccountTests: XCTestCase {
 
   // MARK: - Test Data
 
-  let testPrivateKey = Data(hex: "4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318")!
+  let testPrivateKey = Data(
+    hex: "4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318")!
   let testAddress = EthereumAddress("0x2c7536E3605D9C16a7a3D7b1898e529396a65c23")!
 
   let testMnemonic =

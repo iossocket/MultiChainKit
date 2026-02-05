@@ -33,7 +33,7 @@ final class EthereumProviderTests: XCTestCase {
   func testInitSepolia() {
     let provider = EthereumProvider(chain: .sepolia)
 
-    XCTAssertEqual(provider.chain.chainId, 11155111)
+    XCTAssertEqual(provider.chain.chainId, 11_155_111)
     XCTAssertTrue(provider.chain.isTestnet)
   }
 
@@ -52,7 +52,8 @@ final class EthereumProviderTests: XCTestCase {
 
   func testBuildJsonRpcRequestWithParams() {
     let provider = EthereumProvider(chain: .mainnet)
-    let request = ChainRequest(method: "eth_getBalance", params: [testAddress.checksummed, "latest"])
+    let request = ChainRequest(
+      method: "eth_getBalance", params: [testAddress.checksummed, "latest"])
 
     let jsonRpc = provider.buildJsonRpcRequest(request, id: 42)
 
@@ -239,9 +240,9 @@ final class EthereumProviderMockTests: XCTestCase {
 
 final class EthereumProviderAnvilTests: XCTestCase {
   lazy var provider = EthereumProvider(
-    chainId: 31337, 
-    name: "Anvil", 
-    url: URL(string: "http://127.0.0.1:8545")!, 
+    chainId: 31337,
+    name: "Anvil",
+    url: URL(string: "http://127.0.0.1:8545")!,
     isTestnet: true
   )
 
@@ -251,7 +252,7 @@ final class EthereumProviderAnvilTests: XCTestCase {
 
   func testChainIdRequest() async throws {
     let result: String = try await provider.send(request: provider.chainIdRequest())
-    XCTAssertEqual(result, "0x7a69") // 31337
+    XCTAssertEqual(result, "0x7a69")  // 31337
   }
 
   func testBlockNumberRequest() async throws {

@@ -262,7 +262,7 @@ final class RLPTests: XCTestCase {
   }
 
   func testRoundTripInteger() throws {
-    let original: UInt64 = 12345678
+    let original: UInt64 = 12_345_678
     let encoded = RLP.encode(original)
     let decoded = try RLP.decode(encoded)
 

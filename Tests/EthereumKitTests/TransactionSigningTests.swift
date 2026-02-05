@@ -11,7 +11,8 @@ final class TransactionSigningTests: XCTestCase {
 
   // MARK: - Test Data
 
-  let testPrivateKey = Data(hex: "4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318")!
+  let testPrivateKey = Data(
+    hex: "4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318")!
   let testAddress = EthereumAddress("0x3535353535353535353535353535353535353535")!
 
   // MARK: - Sign Transaction
@@ -116,7 +117,7 @@ final class TransactionSigningTests: XCTestCase {
       nonce: 0,
       maxPriorityFeePerGas: Wei.fromGwei(2),
       maxFeePerGas: Wei.fromGwei(100),
-      gasLimit: 1000000,
+      gasLimit: 1_000_000,
       to: nil,
       value: .zero,
       data: Data(repeating: 0x60, count: 100)
@@ -189,7 +190,7 @@ final class TransactionSigningTests: XCTestCase {
   func testSignTransactionSepolia() throws {
     let signer = try EthereumSigner(privateKey: testPrivateKey)
     var tx = EthereumTransaction(
-      chainId: 11155111,
+      chainId: 11_155_111,
       nonce: 0,
       maxPriorityFeePerGas: .zero,
       maxFeePerGas: .zero,
@@ -279,7 +280,7 @@ final class TransactionSigningTests: XCTestCase {
       nonce: 0,
       maxPriorityFeePerGas: Wei.fromGwei(2),
       maxFeePerGas: Wei.fromGwei(100),
-      gasLimit: 1000000,
+      gasLimit: 1_000_000,
       to: testAddress,
       value: .zero,
       data: largeData
