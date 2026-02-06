@@ -69,4 +69,11 @@ public struct EthereumSigner: Signer, PrivateKeySigner, MnemonicSigner, Sendable
     prefixed.append(data)
     return try sign(hash: Keccak256.hash(prefixed))
   }
+
+  // MARK: - EIP-712 Typed Data
+
+  public func signTypedData(_ typedData: EIP712TypedData) throws -> EthereumSignature {
+    let hash = try typedData.signHash()
+    return try sign(hash: hash)
+  }
 }

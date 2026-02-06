@@ -13,6 +13,13 @@ extension EthereumTransaction {
     signature = try signer.sign(hash: hashForSigning())
   }
 
+  /// Returns a new signed transaction
+  public func signed(with signer: EthereumSigner) throws -> EthereumTransaction {
+    var tx = self
+    try tx.sign(with: signer)
+    return tx
+  }
+
   // MARK: - Recover Sender
 
   public func recoverSender() throws -> EthereumAddress {
