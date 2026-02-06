@@ -10,20 +10,20 @@ let package = Package(
         .macOS(.v12)
     ],
     products: [
-        // // Full SDK with all chains
-        // .library(
-        //     name: "MultiChainKit",
-        //     targets: ["MultiChainKit"]
-        // ),
-        // // Individual chain modules for selective import
-        // .library(
-        //     name: "EthereumKit",
-        //     targets: ["EthereumKit"]
-        // ),
-        // .library(
-        //     name: "StarkNetKit",
-        //     targets: ["StarkNetKit"]
-        // ),
+        // Full SDK with all chains
+        .library(
+            name: "MultiChainKit",
+            targets: ["MultiChainKit"]
+        ),
+        // Individual chain modules for selective import
+        .library(
+            name: "EthereumKit",
+            targets: ["EthereumKit"]
+        ),
+        .library(
+            name: "StarknetKit",
+            targets: ["StarknetKit"]
+        ),
         // Core module only (for building custom implementations)
         .library(
             name: "MultiChainCore",
@@ -60,14 +60,14 @@ let package = Package(
             path: "Sources/EthereumKit"
         ),
 
-        // MARK: - StarkNet Module
+        // MARK: - Starknet Module
         .target(
-            name: "StarkNetKit",
+            name: "StarknetKit",
             dependencies: [
                 "MultiChainCore",
                 "BigInt",
             ],
-            path: "Sources/StarkNetKit"
+            path: "Sources/StarknetKit"
         ),
 
         // MARK: - Unified Entry Point
@@ -76,7 +76,7 @@ let package = Package(
             dependencies: [
                 "MultiChainCore",
                 "EthereumKit",
-                "StarkNetKit"
+                "StarknetKit"
             ],
             path: "Sources/MultiChainKit"
         ),
@@ -93,9 +93,9 @@ let package = Package(
             path: "Tests/EthereumKitTests"
         ),
         .testTarget(
-            name: "StarkNetKitTests",
-            dependencies: ["StarkNetKit"],
-            path: "Tests/StarkNetKitTests"
+            name: "StarknetKitTests",
+            dependencies: ["StarknetKit"],
+            path: "Tests/StarknetKitTests"
         ),
         .testTarget(
             name: "MultiChainKitTests",

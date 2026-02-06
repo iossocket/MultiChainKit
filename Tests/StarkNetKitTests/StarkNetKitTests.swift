@@ -1,11 +1,11 @@
 //
-//  StarkNetKitTests.swift
-//  StarkNetKitTests
+//  StarknetKitTests.swift
+//  StarknetKitTests
 //
 
 import XCTest
 
-@testable import StarkNetKit
+@testable import StarknetKit
 
-final class StarkNetKitTests: XCTestCase {
+final class StarknetKitTests: XCTestCase {
 }

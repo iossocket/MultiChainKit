@@ -2,11 +2,11 @@
 
 ## Overview
 
-Swift SDK for Ethereum and StarkNet. One mnemonic, multiple chains, consistent API.
+Swift SDK for Ethereum and Starknet. One mnemonic, multiple chains, consistent API.
 
 **Stack**: Swift 5.10+, iOS 14+/macOS 12+, async/await
 
-**Not in scope (for now)**: hardware wallets, WebSocket subscriptions, full ABI encoding, ENS/StarkNet ID, multisig
+**Not in scope (for now)**: hardware wallets, WebSocket subscriptions, full ABI encoding, ENS/Starknet ID, multisig
 
 ## Modules
 
@@ -14,7 +14,7 @@ Swift SDK for Ethereum and StarkNet. One mnemonic, multiple chains, consistent A
 MultiChainKit
 ├── MultiChainCore     → protocols, BIP39/32, errors
 ├── EthereumKit        → secp256k1, RLP, EIP-1559
-├── StarkNetKit        → STARK curve, Pedersen/Poseidon, account abstraction
+├── StarknetKit        → STARK curve, Pedersen/Poseidon, account abstraction
 └── MultiChainKit      → MultiChainWallet facade
 ```
 
@@ -62,9 +62,10 @@ protocol DeployableAccount<C>: SignableAccount<C> {
 ```
 
 Three levels:
+
 - `Account` — read-only, for watch-only wallets
 - `SignableAccount` — can sign
-- `DeployableAccount` — for StarkNet where accounts need deployment
+- `DeployableAccount` — for Starknet where accounts need deployment
 
 ### Signer
 
@@ -98,12 +99,12 @@ Requests are value types — create them without executing, batch them, inspect 
 
 ### Types
 
-| Type | What it is |
-|------|------------|
-| `Wei` | 256-bit value, converts to/from Gwei/Ether |
-| `EthereumAddress` | 20 bytes, EIP-55 checksum |
-| `EthereumTransaction` | EIP-1559 tx |
-| `EthereumSignature` | r, s, v |
+| Type                  | What it is                                 |
+| --------------------- | ------------------------------------------ |
+| `Wei`                 | 256-bit value, converts to/from Gwei/Ether |
+| `EthereumAddress`     | 20 bytes, EIP-55 checksum                  |
+| `EthereumTransaction` | EIP-1559 tx                                |
+| `EthereumSignature`   | r, s, v                                    |
 
 ### Crypto
 
@@ -120,16 +121,16 @@ Requests are value types — create them without executing, batch them, inspect 
 3. RLP encode signed tx → eth_sendRawTransaction
 ```
 
-## StarkNet
+## Starknet
 
 ### Types
 
-| Type | What it is |
-|------|------------|
-| `Felt` | Field element, < 2^251 |
-| `StarkNetAddress` | Contract address (felt) |
-| `StarkNetInvokeV3` | Invoke transaction |
-| `StarkNetSignature` | [r, s] felts |
+| Type                | What it is              |
+| ------------------- | ----------------------- |
+| `Felt`              | Field element, < 2^251  |
+| `StarknetAddress`   | Contract address (felt) |
+| `StarknetInvokeV3`  | Invoke transaction      |
+| `StarknetSignature` | [r, s] felts            |
 
 ### Crypto
 
@@ -139,10 +140,10 @@ Requests are value types — create them without executing, batch them, inspect 
 
 ### Account types
 
-StarkNet has native account abstraction — accounts are contracts.
+Starknet has native account abstraction — accounts are contracts.
 
 ```swift
-enum StarkNetAccountType {
+enum StarknetAccountType {
     case openZeppelin(classHash: Felt)  // MVP
     case argent(classHash: Felt)        // later
     case braavos(classHash: Felt)       // later
@@ -154,14 +155,14 @@ MVP supports OpenZeppelin (simplest). Others can be added via `CalldataEncoder` 
 
 ### Key differences from Ethereum
 
-| | Ethereum | StarkNet |
-|-|----------|----------|
-| Account | EOA | Contract |
-| Signature validation | Protocol | Contract |
-| Address | From pubkey | From deploy params |
-| Tx types | Legacy/1559 | Invoke/DeployAccount/Declare |
-| Gas | Single | L1 + L2 |
-| Value | uint256 | felt252 |
+|                      | Ethereum    | Starknet                     |
+| -------------------- | ----------- | ---------------------------- |
+| Account              | EOA         | Contract                     |
+| Signature validation | Protocol    | Contract                     |
+| Address              | From pubkey | From deploy params           |
+| Tx types             | Legacy/1559 | Invoke/DeployAccount/Declare |
+| Gas                  | Single      | L1 + L2                      |
+| Value                | uint256     | felt252                      |
 
 ### Transaction flow
 
@@ -196,9 +197,9 @@ let account = try EthereumAccount(mnemonic: mnemonic)
 let provider = EthereumProvider(chain: .sepolia)
 let balance = try await provider.getBalance(account.address)
 
-// StarkNet
-let account = try StarkNetAccount(mnemonic: mnemonic)
-let provider = StarkNetProvider(chain: .sepolia)
+// Starknet
+let account = try StarknetAccount(mnemonic: mnemonic)
+let provider = StarknetProvider(chain: .sepolia)
 if try await !account.isDeployed {
     try await account.deploy()
 }
@@ -209,7 +210,7 @@ if try await !account.isDeployed {
 ```swift
 let wallet = try MultiChainWallet(mnemonic: mnemonic)
 wallet.ethereum.connect(provider: EthereumProvider(chain: .sepolia))
-wallet.starknet.connect(provider: StarkNetProvider(chain: .sepolia))
+wallet.starknet.connect(provider: StarknetProvider(chain: .sepolia))
 ```
 
 ## Security
@@ -222,15 +223,16 @@ wallet.starknet.connect(provider: StarkNetProvider(chain: .sepolia))
 ## Testing
 
 Standard test vectors:
+
 - BIP39: trezor/python-mnemonic
 - BIP32: bitcoin/bips
 - Ethereum: ethereum/tests
-- StarkNet: starkware-libs/starknet-specs
+- Starknet: starkware-libs/starknet-specs
 
 ## References
 
 **Ethereum**: EIP-155, EIP-1559, EIP-2718, BIP-32/39/44
 
-**StarkNet**: [docs.starknet.io](https://docs.starknet.io) — transactions, STARK curve, Pedersen hash, account abstraction
+**Starknet**: [docs.starknet.io](https://docs.starknet.io) — transactions, STARK curve, Pedersen hash, account abstraction
 
 **Libraries**: web3swift, starknet.swift, BigInt, CryptoSwift, secp256k1.swift

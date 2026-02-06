@@ -29,7 +29,7 @@ public protocol SignableAccount<C>: Account {
 
 // MARK: - DeployableAccount
 
-/// Account that requires on-chain deployment (e.g. StarkNet account contracts).
+/// Account that requires on-chain deployment (e.g. Starknet account contracts).
 public protocol DeployableAccount<C>: SignableAccount {
   var isDeployed: Bool { get async throws }
   func deployRequest() throws -> ChainRequest

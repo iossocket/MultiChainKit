@@ -141,11 +141,11 @@ final class BIP32Tests: XCTestCase {
     XCTAssertEqual(derivedKey.chainCode.count, 32)
   }
 
-  func testStarkNetStandardPath() throws {
+  func testStarknetStandardPath() throws {
     let seedHex = "000102030405060708090a0b0c0d0e0f"
     let seed = Data(hexString: seedHex)!
 
-    // StarkNet standard path: m/44'/9004'/0'/0/0
+    // Starknet standard path: m/44'/9004'/0'/0/0
     let path = DerivationPath.starknet
     let derivedKey = try BIP32.derive(seed: seed, path: path)
 

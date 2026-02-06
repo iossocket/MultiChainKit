@@ -1,6 +1,6 @@
 //
-//  StarkNetKit.swift
-//  StarkNetKit
+//  StarknetKit.swift
+//  StarknetKit
 //
 
 import Foundation

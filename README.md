@@ -2,101 +2,120 @@
 
 [![Tests](https://github.com/iossocket/MultiChainKit/actions/workflows/test.yml/badge.svg)](https://github.com/iossocket/MultiChainKit/actions/workflows/test.yml)
 
-Swift SDK for Ethereum and StarkNet.
+Swift SDK for Ethereum and Starknet.
 
 ## Why?
 
-Most Swift blockchain SDKs focus on a single chain. If you're building a wallet or dApp that needs to support multiple chains, you end up juggling different libraries with inconsistent APIs. MultiChainKit provides a unified interface so you can work with Ethereum and StarkNet using the same patterns.
+Most Swift blockchain SDKs focus on a single chain. If you're building a wallet or dApp that needs to support multiple chains, you end up juggling different libraries with inconsistent APIs. MultiChainKit provides a unified interface so you can work with Ethereum and Starknet using the same patterns.
 
 ## Install
 
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/user/MultiChainKit.git", from: "0.1.0")
+    .package(url: "https://github.com/iossocket/MultiChainKit.git", from: "0.1.0")
 ]
 
 // Pick what you need
 .target(name: "YourApp", dependencies: ["MultiChainKit"])  // everything
-.target(name: "YourApp", dependencies: ["EthereumKit"])    // just Ethereum
-.target(name: "YourApp", dependencies: ["StarkNetKit"])    // just StarkNet
+.target(name: "YourApp", dependencies: ["EthereumKit"])      // just Ethereum
+.target(name: "YourApp", dependencies: ["MultiChainCore"])   // core only
 ```
 
 Requires iOS 14+ / macOS 12+, Swift 5.10+.
 
 ## Usage
 
-### Wallet
+### Ethereum Account & Balance
 
 ```swift
-import MultiChainKit
+import EthereumKit
 
-// New wallet
-let wallet = try MultiChainWallet.generate()
-print(wallet.mnemonic)
+// Account from address (read-only)
+let account = EthereumAddress("0x742d35Cc6634C0532925a3b844Bc9e7595f...")!
+let readOnly = EthereumAccount(address: account)
 
-// From existing mnemonic
-let wallet = try MultiChainWallet(mnemonic: "abandon abandon abandon ...")
+// Account from mnemonic or private key (for signing)
+let signable = try EthereumSignableAccount(mnemonic: "abandon abandon ...", path: .ethereum)
+let address = signable.address.checksummed
+
+// Provider and balance
+let provider = EthereumProvider(chain: .sepolia)
+let balanceHex: String = try await provider.send(request: signable.balanceRequest())
+let wei = Wei(balanceHex) ?? .zero
+print("Balance: \(wei.toEtherDecimal()) ETH")
 ```
 
-### Ethereum
+### Ethereum Transfer
 
 ```swift
 import EthereumKit
 
 let provider = EthereumProvider(chain: .sepolia)
-try wallet.connectEthereum(provider: provider)
+let signable = try EthereumSignableAccount(privateKey: privateKeyData)
 
-// Address
-let address = wallet.ethereumAccount!.address.checksummed
-
-// Balance
-let balance = try await provider.send(
-    request: wallet.ethereumAccount!.balanceRequest()
+// Get nonce
+let nonceHex: String = try await provider.send(
+    request: provider.getTransactionCountRequest(address: signable.address, block: .pending)
 )
-print("\(balance.inEther) ETH")
+let nonce = UInt64(nonceHex.dropFirst(2), radix: 16) ?? 0
 
-// Transfer
-let txHash = try await wallet.ethereumAccount!.transfer(
-    to: EthereumAddress("0x742d35Cc6634C0532925a3b844Bc9e7595f...")!,
-    amount: .ether(0.1),
-    provider: provider
+// Build and sign transaction
+var tx = signable.transferTransaction(
+    to: EthereumAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")!,
+    value: Wei.fromEther(1),
+    nonce: nonce,
+    maxPriorityFeePerGas: Wei.fromGwei(2),
+    maxFeePerGas: Wei.fromGwei(30),
+    chainId: 11155111
 )
+try signable.sign(transaction: &tx)
+
+// Send
+guard let rawTx = tx.rawTransaction else { return }
+let txHash: String = try await provider.send(request: provider.sendRawTransactionRequest(rawTx))
 ```
 
-### StarkNet
+### Message Signing (EIP-191)
 
 ```swift
-import StarkNetKit
+let signature = try signable.signMessage("Hello, Ethereum")
+// Recover signer
+let recovered = try signable.recoverMessageSigner(message: "Hello, Ethereum", signature: signature)
+```
 
-let provider = StarkNetProvider(chain: .sepolia)
-try wallet.connectStarkNet(provider: provider)
+### Contract Calls (ABI)
 
-// StarkNet accounts need deployment first
-if try await !wallet.starknetAccount!.isDeployed {
-    let receipt = try await wallet.starknetAccount!.deploy()
-}
+```swift
+import EthereumKit
 
-// Balance
-let balance = try await provider.send(
-    request: wallet.starknetAccount!.balanceRequest()
-)
+// Encode function call
+let selector = ABIValue.functionSelector("transfer(address,uint256)")
+let args: [ABIValue] = [
+    .address(EthereumAddress("0x7099...")!),
+    .uint256(Wei.fromEther(1))
+]
+let callData = ABIValue.encodeCall(signature: "transfer(address,uint256)", arguments: args)
 
-// Transfer
-let txHash = try await wallet.starknetAccount!.transfer(
-    to: StarkNetAddress("0x049d36570d4e46f48e99674bd3fcc84644ddd...")!,
-    amount: Felt("0x38D7EA4C68000")!
-)
+// Use as transaction data or with eth_call
 ```
 
 ## Structure
 
 ```
 MultiChainKit
-├── MultiChainCore     # Protocols, BIP39/32, shared types
-├── EthereumKit        # Ethereum: secp256k1, RLP, EIP-1559
-├── StarkNetKit        # StarkNet: STARK curve, Pedersen, account abstraction
-└── MultiChainKit      # MultiChainWallet, ChainRegistry
+├── MultiChainCore    # Protocols (Chain, Account, Provider, Signer), BIP39/BIP32
+├── EthereumKit       # Ethereum implementation
+│   ├── Account      # EthereumAccount, EthereumSignableAccount
+│   ├── Contract    # ABI encoding, EthereumContract
+│   ├── Crypto       # Keccak256, Secp256k1
+│   ├── Extensions   # EIP-712 typed data
+│   ├── Provider     # EthereumProvider, JSON-RPC
+│   ├── Signer       # EthereumSigner, EthereumSignature
+│   ├── Transaction  # EthereumTransaction (EIP-1559), RLP
+│   └── Types        # Wei, EthereumAddress, BlockTag, ABI, Events, Receipt
+├── StarknetKit      # Starknet (in progress)
+└── MultiChainKit    # Unified entry (in progress)
 ```
 
 ## Status
@@ -104,19 +123,22 @@ MultiChainKit
 | Chain    | Mainnet | Testnet     |
 | -------- | ------- | ----------- |
 | Ethereum | ✓       | ✓ (Sepolia) |
-| StarkNet | ✓       | ✓ (Sepolia) |
+| Starknet | —       | —           |
 
-What's done:
+**Ethereum (done):**
 
-- Wallet generation and recovery (BIP39/BIP32)
-- Basic transfers
-- Balance queries
+- BIP39/BIP32, accounts (read-only + signable)
+- EIP-1559 transactions, RLP encoding, signing
+- Provider (JSON-RPC), balance/nonce/call/sendRawTransaction
+- ABI encode/decode, contract call encoding, events (ABIEvent)
+- EIP-712 typed data signing
+- EIP-191 personal message signing
 
-What's next:
+**Planned:**
 
-- ERC20 tokens
-- Contract calls
-- Hardware wallets
+- Starknet implementation
+- MultiChainWallet / ChainRegistry
+- ERC20 helpers, hardware wallets
 
 ## Related
 
