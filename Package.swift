@@ -66,6 +66,7 @@ let package = Package(
             dependencies: [
                 "MultiChainCore",
                 "BigInt",
+                "CryptoSwift",
             ],
             path: "Sources/StarknetKit"
         ),
