@@ -68,12 +68,22 @@ public struct Felt: ChainValue, Sendable {
   // MARK: - Data Conversion
 
   /// Returns 32-byte big-endian representation
-  public var bigEndianData: Data { 
+  public var bigEndianData: Data {
     let data = value.serialize()
     if data.count < 32 {
       return Data(repeating: 0, count: 32 - data.count) + data
     }
     return data
+  }
+
+  /// Returns 32-byte little-endian representation (for FFI with StarknetCrypto)
+  public var littleEndianData: Data {
+    Data(bigEndianData.reversed())
+  }
+
+  /// Initialize from 32-byte little-endian Data
+  public init(littleEndian data: Data) {
+    self.init(Data(data.reversed()))
   }
 
   // MARK: - Arithmetic

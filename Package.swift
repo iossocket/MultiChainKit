@@ -36,7 +36,9 @@ let package = Package(
         // Cryptographic functions (Keccak, PBKDF2, etc.)
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "1.9.0"),
         // secp256k1 elliptic curve for Ethereum
-        .package(url: "https://github.com/GigaBitcoin/secp256k1.swift.git", from: "0.21.1")
+        .package(url: "https://github.com/GigaBitcoin/secp256k1.swift.git", from: "0.21.1"),
+        // Starknet crypto (Pedersen, Poseidon, ECDSA) via Rust FFI
+        .package(url: "https://github.com/iossocket/StarknetCryptoSwift.git", from: "0.1.2")
     ],
     targets: [
         // MARK: - Core Module
@@ -44,7 +46,8 @@ let package = Package(
             name: "MultiChainCore",
             dependencies: [
                 "BigInt",
-                "CryptoSwift"
+                "CryptoSwift",
+                .product(name: "StarknetCrypto", package: "StarknetCryptoSwift"),
             ],
             path: "Sources/MultiChainCore"
         ),
@@ -67,6 +70,7 @@ let package = Package(
                 "MultiChainCore",
                 "BigInt",
                 "CryptoSwift",
+                .product(name: "StarknetCrypto", package: "StarknetCryptoSwift"),
             ],
             path: "Sources/StarknetKit"
         ),
