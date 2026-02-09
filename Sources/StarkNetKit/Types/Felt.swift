@@ -167,6 +167,20 @@ public struct Felt: ChainValue, Sendable {
     var container = encoder.singleValueContainer()
     try container.encode(hexString)
   }
+  // MARK: - Short String
+
+  /// Encode an ASCII string as a Felt (max 31 bytes). Used for chain IDs like "SN_MAIN".
+  public static func fromShortString(_ string: String) -> Felt {
+    let bytes = Array(string.utf8)
+    precondition(bytes.count <= 31, "Short string must be at most 31 bytes")
+    return Felt(BigUInt(Data(bytes)))
+  }
+
+  /// Decode this Felt back to an ASCII short string.
+  public func toShortString() -> String {
+    let data = value.serialize()
+    return String(bytes: data, encoding: .ascii) ?? ""
+  }
 }
 
 // MARK: - Equatable

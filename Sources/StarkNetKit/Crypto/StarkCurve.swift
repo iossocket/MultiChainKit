@@ -4,6 +4,7 @@
 //
 
 import BigInt
+import MultiChainCore
 import StarknetCrypto
 import Foundation
 
@@ -15,11 +16,15 @@ public enum StarkCurveError: Error, Sendable {
   case deserializationError
 }
 
-public struct StarknetSignature: Sendable, Equatable {
+public struct StarknetSignature: ChainSignature, Sendable, Equatable {
   public let r: Felt
   public let s: Felt
 
   public var feltArray: [Felt] { [r, s] }
+
+  public var rawData: Data {
+    r.bigEndianData + s.bigEndianData
+  }
 }
 
 public enum StarkCurve {
