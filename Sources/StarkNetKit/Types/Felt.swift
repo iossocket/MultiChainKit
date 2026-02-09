@@ -86,6 +86,9 @@ public struct Felt: ChainValue, Sendable {
     self.init(Data(data.reversed()))
   }
 
+  /// Access the underlying BigUInt value.
+  public var bigUIntValue: BigUInt { value }
+
   // MARK: - Arithmetic
 
   public static func + (lhs: Felt, rhs: Felt) -> Felt {
