@@ -45,6 +45,13 @@ public struct Starknet: Chain, Sendable, Equatable, Hashable {
     isTestnet: true
   )
 
+  public static let devnet = Starknet(
+    chainId: Felt.fromShortString("SN_SEPOLIA"),
+    name: "StarkNet Devnet",
+    rpcURL: URL(string: "http://127.0.0.1:5050")!,
+    isTestnet: true
+  )
+
   // MARK: - Equatable & Hashable
 
   public static func == (lhs: Starknet, rhs: Starknet) -> Bool {
