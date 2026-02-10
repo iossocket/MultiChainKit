@@ -89,4 +89,24 @@ struct PoseidonHashTests {
     let result = try Poseidon.hashMany(Array(repeating: Felt.zero, count: 10))
     #expect(result == Felt("0x7c19756199eacf9ac8c06ecab986929be144ee4a852db16f796435562e69c7c")!)
   }
+
+  @Test("Poseidon hash: empty array")
+  func hashEmpty() throws {
+    // poseidon_hash_many([]) == poseidon_hash_many([0]) per sponge padding
+    let result = try Poseidon.hashMany([])
+    let resultFromZero = try Poseidon.hashMany([.zero])
+    #expect(result == resultFromZero)
+  }
+
+  @Test("Poseidon hash: resource bounds encoded values")
+  func hashResourceBoundsValues() throws {
+    let bounds = StarknetResourceBoundsMapping(
+      l1Gas: StarknetResourceBounds(maxAmount: 1000, maxPricePerUnit: BigUInt(500)),
+      l2Gas: StarknetResourceBounds(maxAmount: 2000, maxPricePerUnit: BigUInt(100)),
+      l1DataGas: .zero
+    )
+    let encoded = StarknetTransactionHashUtil.encodeResourceBounds(bounds)
+    // This should not throw invalidHashInput
+    let _ = try Poseidon.hashMany([Felt(0)] + encoded)
+  }
 }
