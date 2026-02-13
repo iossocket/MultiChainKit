@@ -24,7 +24,7 @@ private let l1DataGasPrefix = Felt.fromShortString("L1_DATA")
 
 // MARK: - InvokeV1
 
-public struct StarknetInvokeV1: Sendable, Equatable {
+public struct StarknetInvokeV1: Sendable, Equatable, Codable {
   public let senderAddress: Felt
   public let calldata: [Felt]
   public let maxFee: Felt
@@ -60,7 +60,7 @@ public struct StarknetInvokeV1: Sendable, Equatable {
 
 // MARK: - InvokeV3
 
-public struct StarknetInvokeV3: Sendable, Equatable {
+public struct StarknetInvokeV3: Sendable, Equatable, Codable {
   public let senderAddress: Felt
   public let calldata: [Felt]
   public let resourceBounds: StarknetResourceBoundsMapping
@@ -117,7 +117,7 @@ public struct StarknetInvokeV3: Sendable, Equatable {
 
 // MARK: - DeployAccountV1
 
-public struct StarknetDeployAccountV1: Sendable, Equatable {
+public struct StarknetDeployAccountV1: Sendable, Equatable, Codable {
   public let classHash: Felt
   public let contractAddressSalt: Felt
   public let constructorCalldata: [Felt]
@@ -164,7 +164,7 @@ public struct StarknetDeployAccountV1: Sendable, Equatable {
 
 // MARK: - DeployAccountV3
 
-public struct StarknetDeployAccountV3: Sendable, Equatable {
+public struct StarknetDeployAccountV3: Sendable, Equatable, Codable {
   public let classHash: Felt
   public let contractAddressSalt: Felt
   public let constructorCalldata: [Felt]
@@ -274,18 +274,75 @@ public enum StarknetTransactionHashUtil {
   }
 }
 
-// MARK: - ChainTransaction Conformance (wrapper)
+// MARK: - StarknetTransaction (unified wrapper)
 
-public struct StarknetTransaction: ChainTransaction, Sendable {
+public enum StarknetTransaction: ChainTransaction, Sendable {
   public typealias C = Starknet
 
-  public let hash: Data?
+  case invokeV1(StarknetInvokeV1)
+  case invokeV3(StarknetInvokeV3)
+  case deployAccountV1(StarknetDeployAccountV1)
+  case deployAccountV3(StarknetDeployAccountV3)
 
-  public func hashForSigning() -> Data {
-    hash ?? Data()
+  /// Transaction hash (same whether signed or unsigned — Starknet tx hash excludes signature).
+  public var hash: Data? {
+    guard let felt = try? transactionHashFelt() else { return nil }
+    return felt.bigEndianData
   }
 
+  /// Hash used for signing — the Felt transaction hash as 32-byte big-endian Data.
+  public func hashForSigning() -> Data {
+    (try? transactionHashFelt().bigEndianData) ?? Data()
+  }
+
+  /// Starknet transactions are submitted via JSON-RPC, not raw-encoded.
+  /// Returns the transaction hash bytes for consistency with ChainTransaction.
   public func encode() -> Data {
-    Data()
+    hashForSigning()
+  }
+
+  /// The transaction hash as Felt.
+  public func transactionHashFelt() throws -> Felt {
+    switch self {
+    case .invokeV1(let tx): return try tx.transactionHash()
+    case .invokeV3(let tx): return try tx.transactionHash()
+    case .deployAccountV1(let tx): return try tx.transactionHash()
+    case .deployAccountV3(let tx): return try tx.transactionHash()
+    }
+  }
+
+  /// The signature attached to this transaction.
+  public var signature: [Felt] {
+    switch self {
+    case .invokeV1(let tx): return tx.signature
+    case .invokeV3(let tx): return tx.signature
+    case .deployAccountV1(let tx): return tx.signature
+    case .deployAccountV3(let tx): return tx.signature
+    }
+  }
+
+  /// Sign this transaction with a signer and return a new copy with the signature attached.
+  public func signed(with signer: StarknetSigner) throws -> StarknetTransaction {
+    let hash = try transactionHashFelt()
+    let sig = try signer.sign(feltHash: hash)
+    switch self {
+    case .invokeV1(var tx):
+      tx.signature = sig.feltArray
+      return .invokeV1(tx)
+    case .invokeV3(var tx):
+      tx.signature = sig.feltArray
+      return .invokeV3(tx)
+    case .deployAccountV1(var tx):
+      tx.signature = sig.feltArray
+      return .deployAccountV1(tx)
+    case .deployAccountV3(var tx):
+      tx.signature = sig.feltArray
+      return .deployAccountV3(tx)
+    }
+  }
+
+  /// Mutating sign — attaches signature in place.
+  public mutating func sign(with signer: StarknetSigner) throws {
+    self = try signed(with: signer)
   }
 }

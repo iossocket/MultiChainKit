@@ -7,6 +7,7 @@
 
 import BigInt
 import Foundation
+import MultiChainCore
 import Testing
 
 @testable import StarknetKit
@@ -222,5 +223,166 @@ struct StarknetAccountTests {
     )
     let signed = try account.signDeployAccountV3(tx)
     #expect(signed.signature.count == 2)
+  }
+
+  // MARK: - Provider requirement
+
+  @Test("estimateFee throws noProvider when provider is nil")
+  func estimateFeeNoProvider() async throws {
+    let account = try makeAccount()  // no provider
+    let call = StarknetCall(
+      contractAddress: Felt(0x1),
+      entryPointSelector: Felt(0x2),
+      calldata: []
+    )
+    do {
+      _ = try await account.estimateFee(calls: [call], nonce: .zero)
+      Issue.record("Expected noProvider error")
+    } catch let error as StarknetAccountError {
+      #expect(error == .noProvider)
+    }
+  }
+
+  @Test("execute throws noProvider when provider is nil")
+  func executeNoProvider() async throws {
+    let account = try makeAccount()  // no provider
+    let call = StarknetCall(
+      contractAddress: Felt(0x1),
+      entryPointSelector: Felt(0x2),
+      calldata: []
+    )
+    do {
+      _ = try await account.execute(calls: [call], resourceBounds: .zero, nonce: .zero)
+      Issue.record("Expected noProvider error")
+    } catch let error as StarknetAccountError {
+      #expect(error == .noProvider)
+    }
+  }
+
+  @Test("account with provider does not throw noProvider")
+  func accountWithProvider() throws {
+    let signer = try makeSigner()
+    let account = StarknetAccount(
+      signer: signer,
+      address: StarknetAddress("0xabc")!,
+      chain: .sepolia,
+      provider: StarknetProvider(chain: .sepolia)
+    )
+    #expect(account.provider != nil)
+  }
+
+  // MARK: - SignableAccount conformance
+
+  @Test("sign(transaction:) signs InvokeV3 via protocol method")
+  func signTransactionInvokeV3() throws {
+    let account = try makeAccount()
+    let call = StarknetCall(contractAddress: Felt(0x1), entryPointSelector: Felt(0x2), calldata: [Felt(99)])
+    let inner = account.buildInvokeV3(calls: [call], resourceBounds: .zero, nonce: Felt(0))
+    var tx = StarknetTransaction.invokeV3(inner)
+
+    #expect(tx.signature.isEmpty)
+    try account.sign(transaction: &tx)
+    #expect(tx.signature.count == 2)
+
+    // Verify signature
+    let hash = try tx.transactionHashFelt()
+    let valid = try StarkCurve.verify(
+      publicKey: account.signer.publicKeyFelt!, hash: hash,
+      r: tx.signature[0], s: tx.signature[1]
+    )
+    #expect(valid)
+  }
+
+  @Test("sign(transaction:) signs InvokeV1 via protocol method")
+  func signTransactionInvokeV1() throws {
+    let account = try makeAccount()
+    let call = StarknetCall(contractAddress: Felt(0x1), entryPointSelector: Felt(0x2), calldata: [])
+    let inner = account.buildInvokeV1(calls: [call], maxFee: Felt(100), nonce: Felt(0))
+    var tx = StarknetTransaction.invokeV1(inner)
+
+    try account.sign(transaction: &tx)
+    #expect(tx.signature.count == 2)
+  }
+
+  @Test("sign(transaction:) signs DeployAccountV3 via protocol method")
+  func signTransactionDeployV3() throws {
+    let account = try makeAccount()
+    let inner = StarknetDeployAccountV3(
+      classHash: Felt(0x111), contractAddressSalt: Felt(0x222),
+      constructorCalldata: [Felt(0x333)], resourceBounds: .zero,
+      nonce: .zero, chainId: account.chain.chainId
+    )
+    var tx = StarknetTransaction.deployAccountV3(inner)
+
+    try account.sign(transaction: &tx)
+    #expect(tx.signature.count == 2)
+  }
+
+  @Test("signMessage signs arbitrary data")
+  func signMessageData() throws {
+    let account = try makeAccount()
+    let message = Felt(0xdeadbeef).bigEndianData
+    let sig = try account.signMessage(message)
+
+    let valid = try StarkCurve.verify(
+      publicKey: account.signer.publicKeyFelt!,
+      hash: Felt(message),
+      r: sig.r, s: sig.s
+    )
+    #expect(valid)
+  }
+
+  @Test("balanceRequest returns starknet_call for STRK ERC20")
+  func balanceRequestMethod() throws {
+    let account = try makeAccount()
+    let request = account.balanceRequest()
+    #expect(request.method == "starknet_call")
+  }
+
+  @Test("sendTransactionRequest returns correct method for InvokeV3")
+  func sendTxRequestInvokeV3() throws {
+    let account = try makeAccount()
+    let call = StarknetCall(contractAddress: Felt(0x1), entryPointSelector: Felt(0x2), calldata: [])
+    let inner = account.buildInvokeV3(calls: [call], resourceBounds: .zero, nonce: Felt(0))
+    var tx = StarknetTransaction.invokeV3(inner)
+    try account.sign(transaction: &tx)
+
+    let request = account.sendTransactionRequest(tx)
+    #expect(request.method == "starknet_addInvokeTransaction")
+  }
+
+  @Test("sendTransactionRequest returns correct method for DeployAccountV1")
+  func sendTxRequestDeployV1() throws {
+    let account = try makeAccount()
+    let inner = StarknetDeployAccountV1(
+      classHash: Felt(0x111), contractAddressSalt: Felt(0x222),
+      constructorCalldata: [Felt(0x333)], maxFee: Felt(500),
+      nonce: .zero, chainId: account.chain.chainId
+    )
+    var tx = StarknetTransaction.deployAccountV1(inner)
+    try account.sign(transaction: &tx)
+
+    let request = account.sendTransactionRequest(tx)
+    #expect(request.method == "starknet_addDeployAccountTransaction")
+  }
+
+  @Test("conforms to SignableAccount protocol")
+  func conformsToSignableAccount() throws {
+    let account = try makeAccount()
+    func acceptSignable<A: SignableAccount>(_ a: A) where A.C == Starknet {}
+    acceptSignable(account)
+  }
+}
+
+// MARK: - StarknetAccountError
+
+@Suite("StarknetAccountError")
+struct StarknetAccountErrorTests {
+
+  @Test("error cases are equatable")
+  func equatable() {
+    #expect(StarknetAccountError.noProvider == .noProvider)
+    #expect(StarknetAccountError.emptyFeeEstimate == .emptyFeeEstimate)
+    #expect(StarknetAccountError.noProvider != .emptyFeeEstimate)
   }
 }

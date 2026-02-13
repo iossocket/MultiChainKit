@@ -12,20 +12,68 @@ import MultiChainCore
 
 // MARK: - StarknetAccount
 
-public struct StarknetAccount: Sendable {
+public struct StarknetAccount: SignableAccount, Sendable {
+  public typealias C = Starknet
+  public typealias S = StarknetSigner
+
   public let signer: StarknetSigner
   public let address: StarknetAddress
   public let chain: Starknet
+  public let provider: StarknetProvider?
 
   /// Create an account from a signer and a known deployed address.
-  public init(signer: StarknetSigner, address: StarknetAddress, chain: Starknet) {
+  public init(signer: StarknetSigner, address: StarknetAddress, chain: Starknet, provider: StarknetProvider? = nil) {
     self.signer = signer
     self.address = address
     self.chain = chain
+    self.provider = provider
   }
 
   /// The sender address as Felt (for transaction building).
   public var addressFelt: Felt { Felt(address.data) }
+
+  // MARK: - SignableAccount Protocol
+
+  public func balanceRequest() -> ChainRequest {
+    // STRK is the native token on Starknet.
+    let strkContract = Felt("0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d")!
+    let call = StarknetCall(
+      contractAddress: strkContract,
+      entrypoint: "balanceOf",
+      calldata: [addressFelt]
+    )
+    let callParam = StarknetCallParam(
+      contractAddress: strkContract.hexString,
+      entryPointSelector: call.entryPointSelector.hexString,
+      calldata: call.calldata.map { $0.hexString }
+    )
+    return ChainRequest(method: "starknet_call", params: [callParam, StarknetBlockId.latest])
+  }
+
+  public func sign(transaction: inout StarknetTransaction) throws {
+    try transaction.sign(with: signer)
+  }
+
+  public func signMessage(_ message: Data) throws -> StarknetSignature {
+    try signer.sign(hash: message)
+  }
+
+  public func sendTransactionRequest(_ transaction: StarknetTransaction) -> ChainRequest {
+    switch transaction {
+    case .invokeV1(let tx):
+      let param = StarknetInvokeV1Param(tx: tx)
+      return ChainRequest(method: "starknet_addInvokeTransaction", params: [param])
+    case .invokeV3(let tx):
+      let param = StarknetInvokeV3Param(tx: tx)
+      return ChainRequest(method: "starknet_addInvokeTransaction", params: [param])
+    case .deployAccountV1(let tx):
+      let param = StarknetDeployAccountV1Param(tx: tx)
+      return ChainRequest(method: "starknet_addDeployAccountTransaction", params: [param])
+    case .deployAccountV3(let tx):
+      let param = StarknetDeployAccountV3Param(tx: tx)
+      return ChainRequest(method: "starknet_addDeployAccountTransaction", params: [param])
+    }
+  }
 
   // MARK: - Build InvokeV1
 
@@ -106,4 +154,56 @@ public struct StarknetAccount: Sendable {
     signed.signature = sig.feltArray
     return signed
   }
+
+  // MARK: - Fee Estimation (batch)
+
+  /// Estimate the fee for a batch of calls.
+  /// Builds a V3 invoke transaction, signs it, and sends to starknet_estimateFee.
+  public func estimateFee(
+    calls: [StarknetCall],
+    nonce: Felt,
+    resourceBounds: StarknetResourceBoundsMapping = .zero
+  ) async throws -> StarknetFeeEstimate {
+    let p = try requireProvider()
+    let tx = buildInvokeV3(calls: calls, resourceBounds: resourceBounds, nonce: nonce)
+    let signed = try signInvokeV3(tx)
+    let request = p.estimateFeeRequest(invokeV3: signed)
+    let results: [StarknetFeeEstimate] = try await p.send(request: request)
+    guard let estimate = results.first else {
+      throw StarknetAccountError.emptyFeeEstimate
+    }
+    return estimate
+  }
+
+  // MARK: - Execute (batch)
+
+  /// Execute a batch of calls: build V3 invoke, sign, and broadcast.
+  /// Returns the transaction hash.
+  public func execute(
+    calls: [StarknetCall],
+    resourceBounds: StarknetResourceBoundsMapping,
+    nonce: Felt
+  ) async throws -> StarknetInvokeTransactionResponse {
+    let p = try requireProvider()
+    let tx = buildInvokeV3(calls: calls, resourceBounds: resourceBounds, nonce: nonce)
+    let signed = try signInvokeV3(tx)
+    let request = p.addInvokeTransactionRequest(invokeV3: signed)
+    return try await p.send(request: request)
+  }
+
+  // MARK: - Private
+
+  private func requireProvider() throws -> StarknetProvider {
+    guard let provider else {
+      throw StarknetAccountError.noProvider
+    }
+    return provider
+  }
+}
+
+// MARK: - StarknetAccountError
+
+public enum StarknetAccountError: Error, Sendable, Equatable {
+  case noProvider
+  case emptyFeeEstimate
 }
