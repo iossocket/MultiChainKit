@@ -6,98 +6,98 @@
 //
 
 import Foundation
-import Testing
+import XCTest
 
 @testable import EthereumKit
 
 // MARK: - Contract Tests
 
-@Suite("EthereumContract Tests")
-struct ContractTests {
+final class ContractTests: XCTestCase {
 
   // MARK: - Test Data
 
   // ERC20 ABI (minimal)
-  let erc20ABI: [ABIItem] = [
-    ABIItem(
-      type: .function,
-      name: "name",
-      inputs: [],
-      outputs: [ABIParameter(name: "", type: "string")],
-      stateMutability: .view
-    ),
-    ABIItem(
-      type: .function,
-      name: "symbol",
-      inputs: [],
-      outputs: [ABIParameter(name: "", type: "string")],
-      stateMutability: .view
-    ),
-    ABIItem(
-      type: .function,
-      name: "decimals",
-      inputs: [],
-      outputs: [ABIParameter(name: "", type: "uint8")],
-      stateMutability: .view
-    ),
-    ABIItem(
-      type: .function,
-      name: "totalSupply",
-      inputs: [],
-      outputs: [ABIParameter(name: "", type: "uint256")],
-      stateMutability: .view
-    ),
-    ABIItem(
-      type: .function,
-      name: "balanceOf",
-      inputs: [ABIParameter(name: "account", type: "address")],
-      outputs: [ABIParameter(name: "", type: "uint256")],
-      stateMutability: .view
-    ),
-    ABIItem(
-      type: .function,
-      name: "transfer",
-      inputs: [
-        ABIParameter(name: "to", type: "address"),
-        ABIParameter(name: "amount", type: "uint256"),
-      ],
-      outputs: [ABIParameter(name: "", type: "bool")],
-      stateMutability: .nonpayable
-    ),
-    ABIItem(
-      type: .function,
-      name: "approve",
-      inputs: [
-        ABIParameter(name: "spender", type: "address"),
-        ABIParameter(name: "amount", type: "uint256"),
-      ],
-      outputs: [ABIParameter(name: "", type: "bool")],
-      stateMutability: .nonpayable
-    ),
-    ABIItem(
-      type: .event,
-      name: "Transfer",
-      inputs: [
-        ABIParameter(name: "from", type: "address", indexed: true),
-        ABIParameter(name: "to", type: "address", indexed: true),
-        ABIParameter(name: "value", type: "uint256", indexed: false),
-      ]
-    ),
-    ABIItem(
-      type: .event,
-      name: "Approval",
-      inputs: [
-        ABIParameter(name: "owner", type: "address", indexed: true),
-        ABIParameter(name: "spender", type: "address", indexed: true),
-        ABIParameter(name: "value", type: "uint256", indexed: false),
-      ]
-    ),
-  ]
+  var erc20ABI: [ABIItem] {
+    [
+      ABIItem(
+        type: .function,
+        name: "name",
+        inputs: [],
+        outputs: [ABIParameter(name: "", type: "string")],
+        stateMutability: .view
+      ),
+      ABIItem(
+        type: .function,
+        name: "symbol",
+        inputs: [],
+        outputs: [ABIParameter(name: "", type: "string")],
+        stateMutability: .view
+      ),
+      ABIItem(
+        type: .function,
+        name: "decimals",
+        inputs: [],
+        outputs: [ABIParameter(name: "", type: "uint8")],
+        stateMutability: .view
+      ),
+      ABIItem(
+        type: .function,
+        name: "totalSupply",
+        inputs: [],
+        outputs: [ABIParameter(name: "", type: "uint256")],
+        stateMutability: .view
+      ),
+      ABIItem(
+        type: .function,
+        name: "balanceOf",
+        inputs: [ABIParameter(name: "account", type: "address")],
+        outputs: [ABIParameter(name: "", type: "uint256")],
+        stateMutability: .view
+      ),
+      ABIItem(
+        type: .function,
+        name: "transfer",
+        inputs: [
+          ABIParameter(name: "to", type: "address"),
+          ABIParameter(name: "amount", type: "uint256"),
+        ],
+        outputs: [ABIParameter(name: "", type: "bool")],
+        stateMutability: .nonpayable
+      ),
+      ABIItem(
+        type: .function,
+        name: "approve",
+        inputs: [
+          ABIParameter(name: "spender", type: "address"),
+          ABIParameter(name: "amount", type: "uint256"),
+        ],
+        outputs: [ABIParameter(name: "", type: "bool")],
+        stateMutability: .nonpayable
+      ),
+      ABIItem(
+        type: .event,
+        name: "Transfer",
+        inputs: [
+          ABIParameter(name: "from", type: "address", indexed: true),
+          ABIParameter(name: "to", type: "address", indexed: true),
+          ABIParameter(name: "value", type: "uint256", indexed: false),
+        ]
+      ),
+      ABIItem(
+        type: .event,
+        name: "Approval",
+        inputs: [
+          ABIParameter(name: "owner", type: "address", indexed: true),
+          ABIParameter(name: "spender", type: "address", indexed: true),
+          ABIParameter(name: "value", type: "uint256", indexed: false),
+        ]
+      ),
+    ]
+  }
 
   // MARK: - Encode Write Tests
 
-  @Test("Encode transfer function call")
-  func encodeTransfer() throws {
+  func testEncodeTransfer() throws {
     let provider = EthereumProvider(
       chainId: 1,
       name: "Mainnet",
@@ -120,12 +120,11 @@ struct ContractTests {
     )
 
     // transfer(address,uint256) selector = 0xa9059cbb
-    #expect(calldata.prefix(4).toHexString() == "a9059cbb")
-    #expect(calldata.count == 68)  // 4 + 32 + 32
+    XCTAssertEqual(calldata.prefix(4).toHexString(), "a9059cbb")
+    XCTAssertEqual(calldata.count, 68)  // 4 + 32 + 32
   }
 
-  @Test("Encode approve function call")
-  func encodeApprove() throws {
+  func testEncodeApprove() throws {
     let provider = EthereumProvider(
       chainId: 1,
       name: "Mainnet",
@@ -149,12 +148,11 @@ struct ContractTests {
     )
 
     // approve(address,uint256) selector = 0x095ea7b3
-    #expect(calldata.prefix(4).toHexString() == "095ea7b3")
-    #expect(calldata.count == 68)
+    XCTAssertEqual(calldata.prefix(4).toHexString(), "095ea7b3")
+    XCTAssertEqual(calldata.count, 68)
   }
 
-  @Test("Encode balanceOf function call")
-  func encodeBalanceOf() throws {
+  func testEncodeBalanceOf() throws {
     let provider = EthereumProvider(
       chainId: 1,
       name: "Mainnet",
@@ -176,14 +174,13 @@ struct ContractTests {
     )
 
     // balanceOf(address) selector = 0x70a08231
-    #expect(calldata.prefix(4).toHexString() == "70a08231")
-    #expect(calldata.count == 36)  // 4 + 32
+    XCTAssertEqual(calldata.prefix(4).toHexString(), "70a08231")
+    XCTAssertEqual(calldata.count, 36)  // 4 + 32
   }
 
   // MARK: - Error Tests
 
-  @Test("Function not found error")
-  func functionNotFound() throws {
+  func testFunctionNotFound() {
     let provider = EthereumProvider(
       chainId: 1,
       name: "Mainnet",
@@ -197,13 +194,12 @@ struct ContractTests {
       provider: provider
     )
 
-    #expect(throws: ContractError.self) {
-      _ = try contract.encodeWrite(functionName: "nonExistent", args: [])
+    XCTAssertThrowsError(try contract.encodeWrite(functionName: "nonExistent", args: [])) { error in
+      XCTAssertTrue(error is ContractError)
     }
   }
 
-  @Test("Argument count mismatch error")
-  func argumentCountMismatch() throws {
+  func testArgumentCountMismatch() {
     let provider = EthereumProvider(
       chainId: 1,
       name: "Mainnet",
@@ -217,19 +213,19 @@ struct ContractTests {
       provider: provider
     )
 
-    #expect(throws: ContractError.self) {
-      // transfer requires 2 args, providing 1
-      _ = try contract.encodeWrite(
+    XCTAssertThrowsError(
+      try contract.encodeWrite(
         functionName: "transfer",
         args: [.address(EthereumAddress("0x1234567890123456789012345678901234567890")!)]
       )
+    ) { error in
+      XCTAssertTrue(error is ContractError)
     }
   }
 
   // MARK: - JSON ABI Tests
 
-  @Test("Initialize from JSON ABI")
-  func initFromJsonABI() throws {
+  func testInitFromJsonABI() throws {
     let jsonABI = """
       [
         {
@@ -255,88 +251,80 @@ struct ContractTests {
       provider: provider
     )
 
-    #expect(contract.abi.count == 1)
-    #expect(contract.abi[0].name == "balanceOf")
+    XCTAssertEqual(contract.abi.count, 1)
+    XCTAssertEqual(contract.abi[0].name, "balanceOf")
   }
 
   // MARK: - ABIValue Type Conversion Tests
 
-  @Test("ABIValue as Wei")
-  func abiValueAsWei() {
+  func testABIValueAsWei() {
     let wei = Wei("0x0de0b6b3a7640000")!
     let value = ABIValue.uint(bits: 256, value: wei)
 
     let result: Wei? = value.as(Wei.self)
-    #expect(result == wei)
+    XCTAssertEqual(result, wei)
   }
 
-  @Test("ABIValue as Bool")
-  func abiValueAsBool() {
+  func testABIValueAsBool() {
     let value = ABIValue.bool(true)
 
     let result: Bool? = value.as(Bool.self)
-    #expect(result == true)
+    XCTAssertEqual(result, true)
   }
 
-  @Test("ABIValue as String")
-  func abiValueAsString() {
+  func testABIValueAsString() {
     let value = ABIValue.string("Hello")
 
     let result: String? = value.as(String.self)
-    #expect(result == "Hello")
+    XCTAssertEqual(result, "Hello")
   }
 
-  @Test("ABIValue as Data")
-  func abiValueAsData() {
+  func testABIValueAsData() {
     let data = Data([0x01, 0x02, 0x03])
     let value = ABIValue.bytes(data)
 
     let result: Data? = value.as(Data.self)
-    #expect(result == data)
+    XCTAssertEqual(result, data)
   }
 
-  @Test("ABIValue as Address string")
-  func abiValueAsAddressString() {
+  func testABIValueAsAddressString() {
     let addr = EthereumAddress("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")!
     let value = ABIValue.address(addr)
 
     let result: String? = value.as(String.self)
-    #expect(result == "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+    XCTAssertEqual(result, "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
   }
 
-  @Test("ABIValue type mismatch returns nil")
-  func abiValueTypeMismatch() {
+  func testABIValueTypeMismatch() {
     let value = ABIValue.bool(true)
 
     let result: String? = value.as(String.self)
-    #expect(result == nil)
+    XCTAssertNil(result)
   }
 
   // MARK: - Function Selector Tests
 
-  @Test("ERC20 function selectors")
-  func erc20FunctionSelectors() {
+  func testERC20FunctionSelectors() {
     // Verify standard ERC20 function selectors
     let transferSelector = ABIValue.functionSelector("transfer(address,uint256)")
-    #expect(transferSelector.toHexString() == "a9059cbb")
+    XCTAssertEqual(transferSelector.toHexString(), "a9059cbb")
 
     let approveSelector = ABIValue.functionSelector("approve(address,uint256)")
-    #expect(approveSelector.toHexString() == "095ea7b3")
+    XCTAssertEqual(approveSelector.toHexString(), "095ea7b3")
 
     let balanceOfSelector = ABIValue.functionSelector("balanceOf(address)")
-    #expect(balanceOfSelector.toHexString() == "70a08231")
+    XCTAssertEqual(balanceOfSelector.toHexString(), "70a08231")
 
     let totalSupplySelector = ABIValue.functionSelector("totalSupply()")
-    #expect(totalSupplySelector.toHexString() == "18160ddd")
+    XCTAssertEqual(totalSupplySelector.toHexString(), "18160ddd")
 
     let decimalsSelector = ABIValue.functionSelector("decimals()")
-    #expect(decimalsSelector.toHexString() == "313ce567")
+    XCTAssertEqual(decimalsSelector.toHexString(), "313ce567")
   }
 
   // MARK: - ABIItem Signature Tests
 
-  @Test("ABIItem signature generation")
-  func abiItemSignature() {
+  func testABIItemSignature() {
     let transferItem = ABIItem(
       type: .function,
       name: "transfer",
@@ -347,12 +335,11 @@ struct ContractTests {
       outputs: [ABIParameter(name: "", type: "bool")]
     )
 
-    #expect(transferItem.signature == "transfer(address,uint256)")
-    #expect(transferItem.selector?.toHexString() == "a9059cbb")
+    XCTAssertEqual(transferItem.signature, "transfer(address,uint256)")
+    XCTAssertEqual(transferItem.selector?.toHexString(), "a9059cbb")
   }
 
-  @Test("ABIItem event topic")
-  func abiItemEventTopic() {
+  func testABIItemEventTopic() {
     let transferEvent = ABIItem(
       type: .event,
       name: "Transfer",
@@ -363,10 +350,11 @@ struct ContractTests {
       ]
     )
 
-    #expect(transferEvent.signature == "Transfer(address,address,uint256)")
+    XCTAssertEqual(transferEvent.signature, "Transfer(address,address,uint256)")
     // keccak256("Transfer(address,address,uint256)")
-    #expect(
-      transferEvent.topic?.toHexString()
-        == "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")
+    XCTAssertEqual(
+      transferEvent.topic?.toHexString(),
+      "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+    )
   }
 }
