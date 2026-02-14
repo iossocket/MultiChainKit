@@ -208,6 +208,65 @@ public final class EthereumProvider: Provider, @unchecked Sendable {
     ChainRequest(method: "eth_maxPriorityFeePerGas")
   }
 
+  // MARK: - Wait For Transaction
+
+  /// Poll until a transaction is confirmed, then return the receipt.
+  public func waitForTransaction(
+    hash: String,
+    confirmations: UInt64 = 1,
+    config: PollingConfig = .default
+  ) async throws -> EthereumReceipt {
+    let deadline = Date().addingTimeInterval(config.timeoutSeconds)
+    let sleepNanos = UInt64(config.intervalSeconds * 1_000_000_000)
+
+    while Date() < deadline {
+      let wrapper: OptionalResult<EthereumReceipt> = try await send(
+        request: transactionReceiptRequest(hash: hash))
+
+      guard let receipt = wrapper.value else {
+        try await Task.sleep(nanoseconds: sleepNanos)
+        continue
+      }
+
+      guard receipt.isSuccess else {
+        throw ChainError.transactionFailed("status: \(receipt.status)")
+      }
+
+      if confirmations <= 1 {
+        return receipt
+      }
+
+      // Check confirmation depth
+      let blockHex: String = try await send(request: blockNumberRequest())
+      if let current = UInt64(blockHex.dropFirst(2), radix: 16),
+        let receiptBlock = receipt.blockNumber,
+        current >= receiptBlock + confirmations - 1
+      {
+        return receipt
+      }
+
+      try await Task.sleep(nanoseconds: sleepNanos)
+    }
+
+    throw ProviderError.timeout
+  }
+
+  // MARK: - Optional Result
+
+  /// Wrapper for JSON-RPC results that may be null (e.g. pending receipt).
+  public struct OptionalResult<T: Decodable>: Decodable {
+    public let value: T?
+
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.singleValueContainer()
+      if container.decodeNil() {
+        self.value = nil
+      } else {
+        self.value = try container.decode(T.self)
+      }
+    }
+  }
+
   // MARK: - Private
 
   private func transactionPreprocess(_ tx: EthereumTransaction) -> [String: String] {

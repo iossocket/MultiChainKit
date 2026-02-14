@@ -191,6 +191,45 @@ public struct StarknetAccount: SignableAccount, Sendable {
     return try await p.send(request: request)
   }
 
+  // MARK: - Execute V3 (auto fee)
+
+  /// Execute calls with automatic nonce + fee estimation.
+  public func executeV3(
+    calls: [StarknetCall],
+    feeMultiplier: Double = 1.5
+  ) async throws -> StarknetInvokeTransactionResponse {
+    let p = try requireProvider()
+
+    // Get nonce
+    let nonceHex: String = try await p.send(
+      request: p.getNonceRequest(address: address))
+    guard let nonce = Felt(nonceHex) else {
+      throw ChainError.invalidTransaction("Cannot parse nonce: \(nonceHex)")
+    }
+
+    // Estimate fee
+    let estimate = try await estimateFee(calls: calls, nonce: nonce)
+
+    // Compute resource bounds from estimate with multiplier
+    let gasConsumed = UInt64(estimate.gasConsumed.dropFirst(2), radix: 16) ?? 0
+    let gasPrice = BigUInt(estimate.gasPrice.dropFirst(2), radix: 16) ?? 0
+    let dataGasConsumed = UInt64(estimate.dataGasConsumed.dropFirst(2), radix: 16) ?? 0
+    let dataGasPrice = BigUInt(estimate.dataGasPrice.dropFirst(2), radix: 16) ?? 0
+
+    let l1Gas = StarknetResourceBounds(
+      maxAmount: UInt64(Double(gasConsumed) * feeMultiplier),
+      maxPricePerUnit: BigUInt(Double(gasPrice) * feeMultiplier)
+    )
+    let l1DataGas = StarknetResourceBounds(
+      maxAmount: UInt64(Double(dataGasConsumed) * feeMultiplier),
+      maxPricePerUnit: BigUInt(Double(dataGasPrice) * feeMultiplier)
+    )
+    let resourceBounds = StarknetResourceBoundsMapping(
+      l1Gas: l1Gas, l2Gas: .zero, l1DataGas: l1DataGas)
+
+    return try await execute(calls: calls, resourceBounds: resourceBounds, nonce: nonce)
+  }
+
   // MARK: - Private
 
   private func requireProvider() throws -> StarknetProvider {

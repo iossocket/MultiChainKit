@@ -98,6 +98,20 @@ public struct AnyEncodable: Encodable, Sendable {
   }
 }
 
+// MARK: - PollingConfig
+
+public struct PollingConfig: Sendable {
+  public let intervalSeconds: TimeInterval
+  public let timeoutSeconds: TimeInterval
+
+  public init(intervalSeconds: TimeInterval = 3.0, timeoutSeconds: TimeInterval = 60.0) {
+    self.intervalSeconds = intervalSeconds
+    self.timeoutSeconds = timeoutSeconds
+  }
+
+  public static let `default` = PollingConfig()
+}
+
 // MARK: - Provider Extension
 
 extension Provider {

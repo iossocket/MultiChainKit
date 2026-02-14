@@ -193,6 +193,46 @@ public final class StarknetProvider: Provider, Sendable {
   public func getTransactionStatusRequest(hash: Felt) -> ChainRequest {
     ChainRequest(method: "starknet_getTransactionStatus", params: [hash.hexString])
   }
+
+  // MARK: - Wait For Transaction
+
+  /// Poll until a transaction is accepted, then return the full receipt.
+  public func waitForTransaction(
+    hash: Felt,
+    config: PollingConfig = .default
+  ) async throws -> StarknetReceipt {
+    let deadline = Date().addingTimeInterval(config.timeoutSeconds)
+    let sleepNanos = UInt64(config.intervalSeconds * 1_000_000_000)
+
+    while Date() < deadline {
+      // Poll status — RPC error means tx not yet in mempool, just retry
+      let status: StarknetTransactionStatus
+      do {
+        status = try await send(request: getTransactionStatusRequest(hash: hash))
+      } catch let error as ProviderError {
+        if case .rpcError = error {
+          try await Task.sleep(nanoseconds: sleepNanos)
+          continue
+        }
+        throw error
+      }
+
+      if status.isRejected {
+        throw ChainError.transactionFailed("REJECTED")
+      }
+      if status.isReverted {
+        throw ChainError.transactionFailed(status.failureReason ?? "REVERTED")
+      }
+      if status.isAccepted {
+        return try await send(request: getTransactionReceiptRequest(hash: hash))
+      }
+
+      // RECEIVED or other — keep polling
+      try await Task.sleep(nanoseconds: sleepNanos)
+    }
+
+    throw ProviderError.timeout
+  }
 }
 
 // MARK: - Block ID

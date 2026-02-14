@@ -217,6 +217,19 @@ public struct EthereumContract: Sendable {
 
     return ChainRequest(method: "eth_getLogs", params: [AnyEncodableDict(filter)])
   }
+
+  // MARK: - Write Contract
+
+  /// Encode, sign, and broadcast a contract write. Returns the tx hash.
+  public func write(
+    functionName: String,
+    args: [ABIValue] = [],
+    account: EthereumSignableAccount,
+    value: Wei = .zero
+  ) async throws -> String {
+    let calldata = try encodeWrite(functionName: functionName, args: args)
+    return try await account.sendTransaction(to: address, value: value, data: calldata)
+  }
 }
 
 // MARK: - AnyEncodableDict
