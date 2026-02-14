@@ -247,8 +247,9 @@ struct RpcParamSerializationTests {
 // MARK: - Devnet Integration Tests
 
 /// Integration tests against local starknet-devnet (started with `starknet-devnet --seed 0`).
-/// These tests are skipped if devnet is not running.
-@Suite("StarknetProvider Devnet Integration")
+/// These tests are skipped on CI or if devnet is not running.
+@Suite("StarknetProvider Devnet Integration",
+       .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil))
 struct StarknetProviderDevnetTests {
 
   let provider: StarknetProvider = {
@@ -264,11 +265,14 @@ struct StarknetProviderDevnetTests {
 
   /// Check if devnet is reachable; skip test if not.
   func requireDevnet() async throws {
+    let reachable: Bool
     do {
       let _: String = try await provider.send(request: provider.chainIdRequest())
+      reachable = true
     } catch {
-      throw TestSkipError("starknet-devnet not running at \(provider.chain.rpcURL)")
+      reachable = false
     }
+    try #require(reachable, "starknet-devnet not running at \(provider.chain.rpcURL)")
   }
 
   @Test("starknet_chainId returns SN_SEPOLIA")
@@ -350,9 +354,4 @@ struct StarknetInvokeTransactionResponseTests {
     let b = try JSONDecoder().decode(StarknetInvokeTransactionResponse.self, from: json.data(using: .utf8)!)
     #expect(a == b)
   }
-}
-
-struct TestSkipError: Error {
-  let message: String
-  init(_ message: String) { self.message = message }
 }
