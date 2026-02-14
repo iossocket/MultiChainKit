@@ -251,7 +251,12 @@ struct RpcParamSerializationTests {
 @Suite("StarknetProvider Devnet Integration")
 struct StarknetProviderDevnetTests {
 
-  let provider = StarknetProvider(chain: .devnet)
+  let provider: StarknetProvider = {
+    let config = URLSessionConfiguration.ephemeral
+    config.timeoutIntervalForRequest = 3
+    config.timeoutIntervalForResource = 3
+    return StarknetProvider(chain: .devnet, session: URLSession(configuration: config))
+  }()
 
   // Predeployed account #0 from `starknet-devnet --seed 0`
   let account0Address = StarknetAddress("0x064b48806902a367c8598f4f95c305e8c1a1acba5f082d294a43793113115691")!
