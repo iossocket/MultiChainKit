@@ -77,6 +77,32 @@ public struct StarknetReceipt: ChainReceipt, Sendable {
   }
 }
 
+// MARK: - StarknetTransactionStatus
+
+public struct StarknetTransactionStatus: Decodable, Sendable, Equatable {
+  public let finalityStatus: String
+  public let executionStatus: String?
+  public let failureReason: String?
+
+  enum CodingKeys: String, CodingKey {
+    case finalityStatus = "finality_status"
+    case executionStatus = "execution_status"
+    case failureReason = "failure_reason"
+  }
+
+  public var isAccepted: Bool {
+    finalityStatus == "ACCEPTED_ON_L2" || finalityStatus == "ACCEPTED_ON_L1"
+  }
+
+  public var isRejected: Bool {
+    finalityStatus == "REJECTED"
+  }
+
+  public var isReverted: Bool {
+    executionStatus == "REVERTED"
+  }
+}
+
 // MARK: - FeePayment
 
 public struct StarknetFeePayment: Codable, Sendable, Equatable {
