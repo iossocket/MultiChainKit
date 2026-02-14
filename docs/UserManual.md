@@ -1,21 +1,27 @@
 # MultiChainKit User Manual
 
-This document is the detailed usage guide for MultiChainKit, for developers integrating Ethereum (and future multi-chain) support into Swift applications. For project overview and installation, see the [README](../README.md).
+This document is the detailed usage guide for MultiChainKit, for developers integrating Ethereum and Starknet support into Swift applications. For project overview and installation, see the [README](../README.md).
 
 ---
 
 ## Table of Contents
 
 1. [Quick Start](#1-quick-start)
-2. [Accounts](#2-accounts)
-3. [RPC and Provider](#3-rpc-and-provider)
-4. [Querying Balance and Nonce](#4-querying-balance-and-nonce)
-5. [Transfers](#5-transfers)
+2. [Ethereum Accounts](#2-ethereum-accounts)
+3. [Ethereum RPC and Provider](#3-ethereum-rpc-and-provider)
+4. [Ethereum: Querying Balance and Nonce](#4-ethereum-querying-balance-and-nonce)
+5. [Ethereum: Transfers](#5-ethereum-transfers)
 6. [Message Signing (EIP-191)](#6-message-signing-eip-191)
 7. [EIP-712 Typed Data Signing](#7-eip-712-typed-data-signing)
-8. [Contract Calls and ABI](#8-contract-calls-and-abi)
-9. [Types and API Reference](#9-types-and-api-reference)
-10. [Troubleshooting and Testing](#10-troubleshooting-and-testing)
+8. [Ethereum: Contract Calls and ABI](#8-ethereum-contract-calls-and-abi)
+9. [Starknet Accounts](#9-starknet-accounts)
+10. [Starknet RPC and Provider](#10-starknet-rpc-and-provider)
+11. [Starknet: Transactions](#11-starknet-transactions)
+12. [Starknet: Contract Interaction](#12-starknet-contract-interaction)
+13. [SNIP-12 Typed Data Signing](#13-snip-12-typed-data-signing)
+14. [MultiChainWallet](#14-multichainwallet)
+15. [Types and API Reference](#15-types-and-api-reference)
+16. [Troubleshooting and Testing](#16-troubleshooting-and-testing)
 
 ---
 
@@ -33,6 +39,7 @@ dependencies: [
 // Choose as needed
 .target(name: "YourApp", dependencies: ["MultiChainKit"])   // everything
 .target(name: "YourApp", dependencies: ["EthereumKit"])     // Ethereum only
+.target(name: "YourApp", dependencies: ["StarknetKit"])     // Starknet only
 .target(name: "YourApp", dependencies: ["MultiChainCore"])  // core only (BIP39/BIP32, etc.)
 ```
 
@@ -54,7 +61,7 @@ print("Balance: \(wei.toEtherDecimal()) ETH")
 
 ---
 
-## 2. Accounts
+## 2. Ethereum Accounts
 
 ### 2.1 Read-Only Account (EthereumAccount)
 
@@ -88,7 +95,7 @@ let signable = try EthereumSignableAccount(mnemonic: mnemonic, path: .ethereum)
 Common derivation paths (defined in `MultiChainCore`):
 
 - `DerivationPath.ethereum` — Ethereum default (m/44'/60'/0'/0/0)
-- `DerivationPath.starknet` — Starknet (planned)
+- `DerivationPath.starknet` — Starknet default (m/44'/9004'/0'/0/0)
 
 Multiple account indices:
 
@@ -108,7 +115,7 @@ addr.data         // 20-byte Data
 
 ---
 
-## 3. RPC and Provider
+## 3. Ethereum RPC and Provider
 
 ### 3.1 Built-in Chains
 
@@ -153,7 +160,7 @@ let results: [Result<String, ProviderError>] = try await provider.send(requests:
 
 ---
 
-## 4. Querying Balance and Nonce
+## 4. Ethereum: Querying Balance and Nonce
 
 ### 4.1 Balance
 
@@ -198,7 +205,7 @@ let receipt: EthereumReceipt? = try await provider.send(
 
 ---
 
-## 5. Transfers
+## 5. Ethereum: Transfers
 
 ### 5.1 Full Flow (EIP-1559)
 
@@ -334,7 +341,7 @@ let signature = try signable.sign(hash: hashToSign)
 
 ---
 
-## 8. Contract Calls and ABI
+## 8. Ethereum: Contract Calls and ABI
 
 ### 8.1 Using EthereumContract (Recommended)
 
@@ -449,9 +456,363 @@ Decode contract return data with `ABIValue.decode(types:data:)` or via `Ethereum
 
 ---
 
-## 9. Types and API Reference
+## 9. Starknet Accounts
 
-### 9.1 Core Types Quick Reference
+### 9.1 StarknetSigner
+
+Create a signer from a private key or mnemonic:
+
+**From Felt private key:**
+
+```swift
+import StarknetKit
+
+let privateKey = Felt("0x1234...")!
+let signer = try StarknetSigner(privateKey: privateKey)
+```
+
+**From mnemonic (BIP32 + EIP-2645 key grinding):**
+
+```swift
+let signer = try StarknetSigner(mnemonic: "abandon abandon ...", path: .starknet)
+let publicKey = signer.publicKeyFelt!
+```
+
+The mnemonic path derives a secp256k1 key via BIP32, then grinds it into a valid Stark private key using HMAC-SHA256 until the result is within the Stark curve order.
+
+### 9.2 StarknetAccount
+
+Combines a signer with a deployed address. Starknet uses account abstraction, so the account address is a contract:
+
+```swift
+let signer = try StarknetSigner(mnemonic: mnemonic, path: .starknet)
+let pubKey = signer.publicKeyFelt!
+
+// Compute the counterfactual address for an OpenZeppelin account
+let address = try OpenZeppelinAccount().computeAddress(publicKey: pubKey, salt: pubKey)
+
+// Create account (optionally with provider)
+let provider = StarknetProvider(chain: .sepolia)
+let account = StarknetAccount(signer: signer, address: address, chain: .sepolia, provider: provider)
+```
+
+### 9.3 StarknetAddress
+
+```swift
+let addr = StarknetAddress("0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7")!
+addr.checksummed  // Checksummed hex string
+addr.data         // 32-byte Data
+```
+
+---
+
+## 10. Starknet RPC and Provider
+
+### 10.1 Built-in Chains
+
+```swift
+Starknet.mainnet  // chainId: SN_MAIN
+Starknet.sepolia  // chainId: SN_SEPOLIA
+```
+
+### 10.2 Creating a Provider
+
+```swift
+let provider = StarknetProvider(chain: .sepolia)
+
+// Custom URLSession
+let provider = StarknetProvider(chain: .mainnet, session: myURLSession)
+```
+
+### 10.3 Common Requests
+
+```swift
+// Chain state
+let chainId: String = try await provider.send(request: provider.chainIdRequest())
+let blockNum: UInt64 = try await provider.send(request: provider.blockNumberRequest())
+
+// Account state
+let nonceHex: String = try await provider.send(request: provider.getNonceRequest(address: addr))
+let classHash: String = try await provider.send(request: provider.getClassHashAtRequest(address: addr))
+
+// Contract call (read-only)
+let call = StarknetCall(contractAddress: contractFelt, entrypoint: "balanceOf", calldata: [addressFelt])
+let result: [String] = try await provider.send(request: provider.callRequest(call: call))
+
+// Transaction receipt
+let receipt: StarknetReceipt = try await provider.send(
+    request: provider.getTransactionReceiptRequest(hash: txHashFelt)
+)
+```
+
+### 10.4 Transaction Polling
+
+Wait for a transaction to be accepted on-chain:
+
+```swift
+let receipt = try await provider.waitForTransaction(hash: txHashFelt)
+// Throws ChainError.transactionFailed if rejected/reverted
+// Throws ProviderError.timeout if deadline exceeded
+```
+
+Custom polling config:
+
+```swift
+let config = PollingConfig(intervalSeconds: 2, timeoutSeconds: 120)
+let receipt = try await provider.waitForTransaction(hash: txHashFelt, config: config)
+```
+
+`StarknetBlockId` options: `.latest`, `.pending`, `.number(UInt64)`, `.hash(Felt)`.
+
+---
+
+## 11. Starknet: Transactions
+
+### 11.1 Building and Signing InvokeV3
+
+```swift
+// Build unsigned transaction
+let calls = [StarknetCall(contractAddress: contractFelt, entrypoint: "transfer", calldata: [to, amount])]
+let tx = account.buildInvokeV3(calls: calls, resourceBounds: resourceBounds, nonce: nonce)
+
+// Sign
+let signed = try account.signInvokeV3(tx)
+
+// Send
+let response: StarknetInvokeTransactionResponse = try await provider.send(
+    request: provider.addInvokeTransactionRequest(invokeV3: signed)
+)
+print(response.transactionHashFelt)
+```
+
+### 11.2 Execute with Auto Fee Estimation
+
+`executeV3` handles nonce, fee estimation, signing, and broadcasting in one call:
+
+```swift
+let calls = [StarknetCall(contractAddress: contractFelt, entrypoint: "transfer", calldata: [to, amount])]
+let response = try await account.executeV3(calls: calls, feeMultiplier: 1.5)
+
+// Wait for confirmation
+let receipt = try await provider.waitForTransaction(hash: response.transactionHashFelt)
+```
+
+### 11.3 Fee Estimation
+
+```swift
+let estimate = try await account.estimateFee(calls: calls, nonce: nonce)
+print(estimate.overallFeeFelt)  // Total fee as Felt
+```
+
+### 11.4 Deploy Account
+
+```swift
+// Build and sign a deploy account transaction (V3)
+let deployTx = StarknetDeployAccountV3(
+    classHash: OpenZeppelinAccount().classHash,
+    contractAddressSalt: pubKey,
+    constructorCalldata: [pubKey],
+    resourceBounds: resourceBounds,
+    nonce: .zero,
+    chainId: Starknet.sepolia.chainId
+)
+let signed = try account.signDeployAccountV3(deployTx)
+let response: StarknetInvokeTransactionResponse = try await provider.send(
+    request: provider.addDeployAccountTransactionRequest(deployV3: signed)
+)
+```
+
+### 11.5 Multicall
+
+Both `buildInvokeV3` and `executeV3` accept an array of calls, which are encoded as a multicall:
+
+```swift
+let calls = [
+    StarknetCall(contractAddress: tokenA, entrypoint: "approve", calldata: [spender, amount]),
+    StarknetCall(contractAddress: router, entrypoint: "swap", calldata: [tokenA, tokenB, amount])
+]
+let response = try await account.executeV3(calls: calls)
+```
+
+---
+
+## 12. Starknet: Contract Interaction
+
+### 12.1 Creating a StarknetContract
+
+```swift
+let abiJson = """
+[
+  { "type": "function", "name": "balanceOf", "inputs": [{"name": "account", "type": "core::felt252"}],
+    "outputs": [{"type": "core::integer::u256"}], "state_mutability": "view" },
+  { "type": "function", "name": "transfer", "inputs": [{"name": "to", "type": "core::felt252"},
+    {"name": "amount", "type": "core::integer::u256"}], "outputs": [], "state_mutability": "external" }
+]
+"""
+let contract = try StarknetContract(address: contractFelt, abiJson: abiJson, provider: provider)
+```
+
+### 12.2 Read-Only Call
+
+```swift
+// Decoded results (CairoValue)
+let results = try await contract.call(function: "balanceOf", args: [.felt(addressFelt)])
+
+// Raw Felt results
+let raw = try await contract.callRaw(function: "balanceOf", args: [.felt(addressFelt)])
+```
+
+### 12.3 Write (Invoke)
+
+`invoke` handles nonce, fee estimation, signing, and broadcasting:
+
+```swift
+let response = try await contract.invoke(
+    function: "transfer",
+    args: [.felt(toFelt), .u256(low: amountLow, high: amountHigh)],
+    account: account,
+    feeMultiplier: 1.5
+)
+```
+
+### 12.4 Fee Estimation
+
+```swift
+let estimate = try await contract.estimateFee(
+    function: "transfer",
+    args: [.felt(toFelt), .u256(low: amountLow, high: .zero)],
+    account: account,
+    nonce: nonce
+)
+```
+
+### 12.5 Event Fetching and Decoding
+
+```swift
+let (events, token) = try await contract.getEvents(
+    eventName: "Transfer",
+    fromBlock: .number(100_000),
+    toBlock: .latest
+)
+for event in events {
+    print(event.name)           // "Transfer"
+    print(event.keys["from"])   // CairoValue
+    print(event.data["value"])  // CairoValue
+}
+```
+
+### 12.6 Common CairoValue Types
+
+| Usage                                    | Description      |
+| ---------------------------------------- | ---------------- |
+| `.felt(Felt)`                            | felt252          |
+| `.u128(Felt)`                            | u128             |
+| `.u256(low: Felt, high: Felt)`           | u256             |
+| `.bool(Bool)`                            | bool             |
+| `.contractAddress(Felt)`                 | ContractAddress  |
+| `.byteArray(CairoByteArray)`            | ByteArray        |
+| `.array([CairoValue])`                  | Array<T>         |
+| `.option(.some(CairoValue))` / `.none`  | Option<T>        |
+| `.tuple([CairoValue])`                  | (T1, T2, ...)    |
+| `.enum(variant: UInt, data: [CairoValue])` | Enum variant  |
+
+---
+
+## 13. SNIP-12 Typed Data Signing
+
+SNIP-12 is Starknet's equivalent of EIP-712. Two revisions exist:
+
+- **v0**: uses Pedersen hash, domain type is `StarkNetDomain`
+- **v1**: uses Poseidon hash, domain type is `StarknetDomain`
+
+### 13.1 Building Typed Data
+
+```swift
+let domain = SNIP12Domain(name: "MyDApp", version: "1", chainId: Starknet.sepolia.chainId)
+
+let types: [String: [SNIP12Type]] = [
+    "StarkNetDomain": [
+        SNIP12Type(name: "name", type: "felt"),
+        SNIP12Type(name: "version", type: "felt"),
+        SNIP12Type(name: "chainId", type: "felt"),
+    ],
+    "Mail": [
+        SNIP12Type(name: "from", type: "felt"),
+        SNIP12Type(name: "to", type: "felt"),
+        SNIP12Type(name: "contents", type: "felt"),
+    ]
+]
+
+let message: [String: SNIP12Value] = [
+    "from": .felt(senderFelt),
+    "to": .felt(recipientFelt),
+    "contents": .shortString("Hello!")
+]
+
+let typedData = SNIP12TypedData(
+    types: types,
+    primaryType: "Mail",
+    domain: domain,
+    message: message
+)
+```
+
+### 13.2 Signing
+
+```swift
+let hash = try typedData.messageHash(accountAddress: account.addressFelt)
+let signature = try account.signer.sign(feltHash: hash)
+```
+
+### 13.3 Revision 1 (Poseidon)
+
+```swift
+let domain = SNIP12Domain(name: "MyDApp", version: "1", chainId: Starknet.sepolia.chainId, revision: .v1)
+// Use "StarknetDomain" (not "StarkNetDomain") in types dict
+// v1 uses Poseidon hash internally
+```
+
+---
+
+## 14. MultiChainWallet
+
+`MultiChainWallet` derives both Ethereum and Starknet accounts from a single BIP39 mnemonic:
+
+```swift
+import MultiChainKit
+
+var wallet = try MultiChainWallet(mnemonic: "abandon abandon ...")
+
+// Access accounts
+wallet.ethereum.address.checksummed  // Ethereum address
+wallet.starknet.address.checksummed  // Starknet address
+
+// Attach providers
+try wallet.connectEthereum(provider: EthereumProvider(chain: .sepolia))
+wallet.connectStarknet(provider: StarknetProvider(chain: .sepolia))
+
+// Now use wallet.ethereum and wallet.starknet for transactions
+let ethBalance: String = try await wallet.ethereum.provider!.send(request: wallet.ethereum.balanceRequest())
+let response = try await wallet.starknet.executeV3(calls: calls)
+```
+
+Custom derivation paths and account type:
+
+```swift
+let wallet = try MultiChainWallet(
+    mnemonic: mnemonic,
+    ethereumPath: .ethereum.account(1),
+    starknetPath: .starknet.account(1),
+    starknetAccountType: OpenZeppelinAccount(),
+    starknetChain: .mainnet
+)
+```
+
+---
+
+## 15. Types and API Reference
+
+### 15.1 Ethereum Types
 
 | Type                                               | Description                                                        |
 | -------------------------------------------------- | ------------------------------------------------------------------ |
@@ -467,7 +828,26 @@ Decode contract return data with `ABIValue.decode(types:data:)` or via `Ethereum
 | `BlockTag`                                         | latest / pending / earliest / number                               |
 | `EIP712TypedData` / `EIP712Domain` / `EIP712Value` | EIP-712 types and signHash()                                       |
 
-### 9.2 Wei Common API
+### 15.2 Starknet Types
+
+| Type                          | Description                                                          |
+| ----------------------------- | -------------------------------------------------------------------- |
+| `StarknetAccount`             | Signable account; signer + address, build/sign/execute transactions  |
+| `StarknetSigner`              | Stark curve signer; from private key, mnemonic, or Data             |
+| `StarknetProvider`            | JSON-RPC wrapper; send, fee estimation, transaction polling          |
+| `Starknet`                    | Chain definition; chainId, rpcURL, mainnet/sepolia                   |
+| `StarknetAddress`             | 32-byte address; checksummed hex                                     |
+| `Felt`                        | Field element (< 2^251 + 17*2^192 + 1); hex, arithmetic, Data       |
+| `StarknetContract`            | Contract wrapper; call, invoke, estimateFee, getEvents, decodeEvent  |
+| `CairoValue` / `CairoType`   | Cairo type codec; encode/decode calldata for all Cairo types         |
+| `StarknetBlockId`             | latest / pending / number / hash                                     |
+| `OpenZeppelinAccount`         | Account type; classHash, constructorCalldata, computeAddress         |
+| `StarknetKeyDerivation`       | BIP32 + EIP-2645 key grinding into Stark curve                      |
+| `SNIP12TypedData` / `SNIP12Domain` / `SNIP12Value` | SNIP-12 types and messageHash()                |
+| `StarknetReceipt`             | Transaction receipt; status, events, fee, messages                   |
+| `PollingConfig`               | Polling interval and timeout for waitForTransaction                  |
+
+### 15.3 Wei Common API
 
 ```swift
 Wei(hexString)           // Parse from "0x..."
@@ -478,7 +858,20 @@ wei.toGweiDecimal()
 wei.hexString            // "0x..."
 ```
 
-### 9.3 Provider Request Methods
+### 15.4 Felt Common API
+
+```swift
+Felt("0x1234")           // From hex string
+Felt(42)                 // From integer literal
+Felt(data)               // From big-endian Data
+felt.hexString           // "0x1234"
+felt.bigEndianData       // 32-byte Data
+felt.bigUIntValue        // BigUInt
+Felt.fromShortString("SN_SEPOLIA")  // Short string encoding
+felt.toShortString()     // Decode short string
+```
+
+### 15.5 Ethereum Provider Request Methods
 
 - `getBalanceRequest(address:block:)`
 - `getTransactionCountRequest(address:block:)`
@@ -488,26 +881,49 @@ wei.hexString            // "0x..."
 - `transactionReceiptRequest(hash:)`
 - `blockNumberRequest()`, `chainIdRequest()`, `maxPriorityFeePerGasRequest()`
 
+### 15.6 Starknet Provider Request Methods
+
+- `chainIdRequest()`, `blockNumberRequest()`
+- `getNonceRequest(address:block:)`
+- `getClassHashAtRequest(address:block:)`
+- `callRequest(call:block:)`
+- `estimateFeeRequest(invokeV3:)`, `estimateFeeRequest(invokeV1:)`
+- `addInvokeTransactionRequest(invokeV3:)`, `addInvokeTransactionRequest(invokeV1:)`
+- `addDeployAccountTransactionRequest(deployV3:)`, `addDeployAccountTransactionRequest(deployV1:)`
+- `getEventsRequest(filter:)`
+- `getTransactionByHashRequest(hash:)`, `getTransactionReceiptRequest(hash:)`, `getTransactionStatusRequest(hash:)`
+- `waitForTransaction(hash:config:)`
+
 ---
 
-## 10. Troubleshooting and Testing
+## 16. Troubleshooting and Testing
 
-### 10.1 Common Errors
+### 16.1 Common Errors
+
+**Ethereum:**
 
 - **Invalid private key/mnemonic:** Ensure private key is 32 bytes; mnemonic passes BIP39 validation and matches the derivation path.
 - **RPC returns 4xx/5xx:** Check URL, network, and RPC rate limits; use a custom `URLSession` if needed.
 - **Signing fails:** Use `EthereumSignableAccount`, call `sign(transaction:)` on a `var tx`, then use `tx.rawTransaction`.
 - **Contract call fails:** Verify ABI and function name/parameter types match the contract; write operations must be signed before `sendRawTransaction`.
 
-### 10.2 Running Tests
+**Starknet:**
+
+- **Invalid private key:** Stark private key must be non-zero and less than the curve order (~2^251).
+- **noProvider error:** Attach a provider to `StarknetAccount` before calling `executeV3`, `estimateFee`, or other network methods.
+- **Transaction REJECTED/REVERTED:** Check the failure reason in `StarknetTransactionStatus`; common causes are insufficient fee, wrong nonce, or contract logic errors.
+- **Contract function not found:** Ensure the function name matches the ABI exactly; interface functions are flattened into the functions dict.
+- **Event decoding fails:** Event names are matched by short name (e.g. "Transfer", not the fully-qualified Cairo path).
+
+### 16.2 Running Tests
 
 ```bash
 swift test
 ```
 
-Tests live in `Tests/EthereumKitTests/` and cover accounts, signing, transactions, ABI, EIP-712, Provider, etc.; they double as usage examples.
+Tests live in `Tests/EthereumKitTests/`, `Tests/StarknetKitTests/`, and `Tests/MultiChainKitTests/`; they cover accounts, signing, transactions, ABI, contracts, typed data, and more. They double as usage examples.
 
-### 10.3 Examples and Further Docs
+### 16.3 Examples and Further Docs
 
 - Root [README](../README.md): installation, structure, status.
 - [DESIGN.md](DESIGN.md): architecture and design.
