@@ -56,4 +56,16 @@ public struct StarknetSigner: Signer, PrivateKeySigner, Sendable {
     }
     self.privateKey = privateKey
   }
+
+  // MARK: - MnemonicSigner
+
+  /// Derive a Stark private key from a BIP39 mnemonic via BIP32 + grind.
+  public init(mnemonic: String, path: DerivationPath) throws {
+    guard BIP39.validate(mnemonic) else {
+      throw SignerError.invalidMnemonic
+    }
+    let seed = try BIP39.seed(from: mnemonic, password: "")
+    let key = try StarknetKeyDerivation.derivePrivateKey(seed: seed, path: path)
+    try self.init(privateKey: key)
+  }
 }
