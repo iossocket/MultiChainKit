@@ -8,93 +8,15 @@ import MultiChainCore
 
 // MARK: - StarknetProvider
 
-public final class StarknetProvider: Provider, Sendable {
+public final class StarknetProvider: JsonRpcProvider, Sendable {
   public typealias C = Starknet
 
   public let chain: Starknet
-  private let session: URLSession
+  public let session: URLSession
 
   public init(chain: Starknet, session: URLSession = .shared) {
     self.chain = chain
     self.session = session
-  }
-
-  // MARK: - Provider Protocol
-
-  public func send<R: Decodable>(request: ChainRequest) async throws -> R {
-    let jsonRpc = JsonRpcRequest(id: 1, method: request.method, params: request.params)
-    let body = try JSONEncoder().encode(jsonRpc)
-
-    var urlRequest = URLRequest(url: chain.rpcURL)
-    urlRequest.httpMethod = "POST"
-    urlRequest.httpBody = body
-    urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-    let (data, response) = try await session.data(for: urlRequest)
-
-    guard let httpResponse = response as? HTTPURLResponse else {
-      throw ProviderError.invalidResponse
-    }
-    guard (200...299).contains(httpResponse.statusCode) else {
-      throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")
-    }
-
-    let rpcResponse: JsonRpcResponse<R>
-    do {
-      rpcResponse = try JSONDecoder().decode(JsonRpcResponse<R>.self, from: data)
-    } catch {
-      throw ProviderError.decodingError(error.localizedDescription)
-    }
-
-    if let error = rpcResponse.error {
-      throw ProviderError.rpcError(code: error.code, message: error.message)
-    }
-    guard let result = rpcResponse.result else {
-      throw ProviderError.invalidResponse
-    }
-    return result
-  }
-
-  public func send<R: Decodable>(requests: [ChainRequest]) async throws -> [Result<R, ProviderError>] {
-    guard !requests.isEmpty else {
-      throw ProviderError.emptyBatchRequest
-    }
-
-    let batch = requests.enumerated().map { i, req in
-      JsonRpcRequest(id: i, method: req.method, params: req.params)
-    }
-    let body = try JSONEncoder().encode(batch)
-
-    var urlRequest = URLRequest(url: chain.rpcURL)
-    urlRequest.httpMethod = "POST"
-    urlRequest.httpBody = body
-    urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-    let (data, response) = try await session.data(for: urlRequest)
-
-    guard let httpResponse = response as? HTTPURLResponse else {
-      throw ProviderError.invalidResponse
-    }
-    guard (200...299).contains(httpResponse.statusCode) else {
-      throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")
-    }
-
-    let responses: [JsonRpcResponse<R>]
-    do {
-      responses = try JSONDecoder().decode([JsonRpcResponse<R>].self, from: data)
-    } catch {
-      throw ProviderError.decodingError(error.localizedDescription)
-    }
-
-    return responses.map { resp in
-      if let error = resp.error {
-        return .failure(.rpcError(code: error.code, message: error.message))
-      }
-      guard let result = resp.result else {
-        return .failure(.invalidResponse)
-      }
-      return .success(result)
-    }
   }
 
   // MARK: - Chain State
@@ -218,10 +140,10 @@ public final class StarknetProvider: Provider, Sendable {
       }
 
       if status.isRejected {
-        throw ChainError.transactionFailed("REJECTED")
+        throw ChainError.transactionFailed(reason: "REJECTED", txHash: hash.hexString)
       }
       if status.isReverted {
-        throw ChainError.transactionFailed(status.failureReason ?? "REVERTED")
+        throw ChainError.transactionFailed(reason: status.failureReason ?? "REVERTED", txHash: hash.hexString)
       }
       if status.isAccepted {
         return try await send(request: getTransactionReceiptRequest(hash: hash))

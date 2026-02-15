@@ -11,7 +11,7 @@ public enum ChainError: Error, Sendable, CustomStringConvertible {
   case invalidAddress(String)
   case invalidTransaction(String)
   case invalidSignature(String)
-  case transactionFailed(String)
+  case transactionFailed(reason: String, txHash: String? = nil)
   case encodingError(String)
   case decodingError(String)
   case valueOutOfRange(String)
@@ -25,7 +25,11 @@ public enum ChainError: Error, Sendable, CustomStringConvertible {
     case .invalidAddress(let address): return "Invalid address: \(address)"
     case .invalidTransaction(let reason): return "Invalid transaction: \(reason)"
     case .invalidSignature(let reason): return "Invalid signature: \(reason)"
-    case .transactionFailed(let reason): return "Transaction failed: \(reason)"
+    case .transactionFailed(let reason, let txHash):
+      if let txHash {
+        return "Transaction \(txHash) failed: \(reason)"
+      }
+      return "Transaction failed: \(reason)"
     case .encodingError(let reason): return "Encoding error: \(reason)"
     case .decodingError(let reason): return "Decoding error: \(reason)"
     case .valueOutOfRange(let reason): return "Value out of range: \(reason)"

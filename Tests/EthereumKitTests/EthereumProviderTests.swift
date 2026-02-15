@@ -40,10 +40,8 @@ final class EthereumProviderTests: XCTestCase {
   // MARK: - JSON-RPC Request Building
 
   func testBuildJsonRpcRequest() {
-    let provider = EthereumProvider(chain: .mainnet)
     let request = ChainRequest(method: "eth_blockNumber", params: [])
-
-    let jsonRpc = provider.buildJsonRpcRequest(request, id: 1)
+    let jsonRpc = JsonRpcRequest(id: 1, method: request.method, params: request.params)
 
     XCTAssertEqual(jsonRpc.method, "eth_blockNumber")
     XCTAssertEqual(jsonRpc.id, 1)
@@ -51,11 +49,9 @@ final class EthereumProviderTests: XCTestCase {
   }
 
   func testBuildJsonRpcRequestWithParams() {
-    let provider = EthereumProvider(chain: .mainnet)
     let request = ChainRequest(
       method: "eth_getBalance", params: [testAddress.checksummed, "latest"])
-
-    let jsonRpc = provider.buildJsonRpcRequest(request, id: 42)
+    let jsonRpc = JsonRpcRequest(id: 42, method: request.method, params: request.params)
 
     XCTAssertEqual(jsonRpc.method, "eth_getBalance")
     XCTAssertEqual(jsonRpc.id, 42)
@@ -71,7 +67,7 @@ final class EthereumProviderTests: XCTestCase {
       """
     let data = json.data(using: .utf8)!
 
-    let result: String = try provider.parseResponse(data)
+    let result: String = try provider.parseJsonRpcResponse(data)
 
     XCTAssertEqual(result, "0x1234")
   }
@@ -83,7 +79,7 @@ final class EthereumProviderTests: XCTestCase {
       """
     let data = json.data(using: .utf8)!
 
-    XCTAssertThrowsError(try provider.parseResponse(data) as String) { error in
+    XCTAssertThrowsError(try provider.parseJsonRpcResponse(data) as String) { error in
       guard case ProviderError.rpcError(let code, let message) = error else {
         XCTFail("Expected rpcError")
         return
@@ -97,7 +93,7 @@ final class EthereumProviderTests: XCTestCase {
     let provider = EthereumProvider(chain: .mainnet)
     let data = "not json".data(using: .utf8)!
 
-    XCTAssertThrowsError(try provider.parseResponse(data) as String) { error in
+    XCTAssertThrowsError(try provider.parseJsonRpcResponse(data) as String) { error in
       XCTAssertTrue(error is ProviderError)
     }
   }
@@ -105,13 +101,13 @@ final class EthereumProviderTests: XCTestCase {
   // MARK: - Batch Request Building
 
   func testBuildBatchRequest() {
-    let provider = EthereumProvider(chain: .mainnet)
     let requests = [
       ChainRequest(method: "eth_blockNumber", params: []),
       ChainRequest(method: "eth_chainId", params: []),
     ]
-
-    let batch = provider.buildBatchRequest(requests)
+    let batch = requests.enumerated().map { i, req in
+      JsonRpcRequest(id: i, method: req.method, params: req.params)
+    }
 
     XCTAssertEqual(batch.count, 2)
     XCTAssertEqual(batch[0].id, 0)

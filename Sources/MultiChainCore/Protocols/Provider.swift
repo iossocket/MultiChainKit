@@ -121,3 +121,94 @@ extension Provider {
     try await send(requests: Array(requests))
   }
 }
+
+// MARK: - JsonRpcProvider
+
+/// A Provider backed by a JSON-RPC HTTP transport.
+/// Conforming types get default `send` implementations for free.
+public protocol JsonRpcProvider: Provider {
+  var session: URLSession { get }
+}
+
+extension JsonRpcProvider {
+  public func send<R: Decodable>(request: ChainRequest) async throws -> R {
+    let jsonRpc = JsonRpcRequest(id: 1, method: request.method, params: request.params)
+    let body = try JSONEncoder().encode(jsonRpc)
+
+    var urlRequest = URLRequest(url: chain.rpcURL)
+    urlRequest.httpMethod = "POST"
+    urlRequest.httpBody = body
+    urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+    let (data, response) = try await session.data(for: urlRequest)
+
+    guard let httpResponse = response as? HTTPURLResponse else {
+      throw ProviderError.invalidResponse
+    }
+    guard (200...299).contains(httpResponse.statusCode) else {
+      throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")
+    }
+
+    return try parseJsonRpcResponse(data)
+  }
+
+  public func send<R: Decodable>(requests: [ChainRequest]) async throws -> [Swift.Result<R, ProviderError>] {
+    guard !requests.isEmpty else {
+      throw ProviderError.emptyBatchRequest
+    }
+
+    let batch = requests.enumerated().map { i, req in
+      JsonRpcRequest(id: i, method: req.method, params: req.params)
+    }
+    let body = try JSONEncoder().encode(batch)
+
+    var urlRequest = URLRequest(url: chain.rpcURL)
+    urlRequest.httpMethod = "POST"
+    urlRequest.httpBody = body
+    urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+    let (data, response) = try await session.data(for: urlRequest)
+
+    guard let httpResponse = response as? HTTPURLResponse else {
+      throw ProviderError.invalidResponse
+    }
+    guard (200...299).contains(httpResponse.statusCode) else {
+      throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")
+    }
+
+    let responses: [JsonRpcResponse<R>]
+    do {
+      responses = try JSONDecoder().decode([JsonRpcResponse<R>].self, from: data)
+    } catch {
+      throw ProviderError.decodingError(error.localizedDescription)
+    }
+
+    return responses.map { resp in
+      if let error = resp.error {
+        return .failure(.rpcError(code: error.code, message: error.message))
+      }
+      guard let result = resp.result else {
+        return .failure(.invalidResponse)
+      }
+      return .success(result)
+    }
+  }
+
+  /// Parse a single JSON-RPC response.
+  public func parseJsonRpcResponse<R: Decodable>(_ data: Data) throws -> R {
+    let response: JsonRpcResponse<R>
+    do {
+      response = try JSONDecoder().decode(JsonRpcResponse<R>.self, from: data)
+    } catch {
+      throw ProviderError.decodingError(error.localizedDescription)
+    }
+
+    if let error = response.error {
+      throw ProviderError.rpcError(code: error.code, message: error.message)
+    }
+    guard let result = response.result else {
+      throw ProviderError.invalidResponse
+    }
+    return result
+  }
+}
