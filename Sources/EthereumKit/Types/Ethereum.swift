@@ -26,6 +26,13 @@ public struct Ethereum: Chain, Sendable, Equatable, Hashable {
     self.rpcURL = rpcURL
     self.isTestnet = isTestnet
   }
+    
+  public init(rpcURL: URL) {
+    self.chainId = 0
+    self.name = ""
+    self.rpcURL = rpcURL
+    self.isTestnet = true
+  }
 
   // MARK: - Predefined Networks
 
@@ -40,6 +47,13 @@ public struct Ethereum: Chain, Sendable, Equatable, Hashable {
     chainId: 11_155_111,
     name: "Sepolia",
     rpcURL: URL(string: "https://eth-sepolia.public.blastapi.io")!,
+    isTestnet: true
+  )
+    
+  public static let anvil = Ethereum(
+    chainId: 31337,
+    name: "Anvil",
+    rpcURL: URL(string: "http://127.0.0.1:8545")!,
     isTestnet: true
   )
 
