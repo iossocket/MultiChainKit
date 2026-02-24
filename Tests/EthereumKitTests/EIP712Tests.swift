@@ -62,7 +62,7 @@ final class EIP712Tests: XCTestCase {
           EIP712Type(name: "name", type: "string"),
           EIP712Type(name: "version", type: "string"),
           EIP712Type(name: "chainId", type: "uint256"),
-          EIP712Type(name: "verifyingContract", type: "address")
+          EIP712Type(name: "verifyingContract", type: "address"),
         ]
       ]
     )
@@ -77,12 +77,12 @@ final class EIP712Tests: XCTestCase {
       "Mail": [
         EIP712Type(name: "from", type: "Person"),
         EIP712Type(name: "to", type: "Person"),
-        EIP712Type(name: "contents", type: "string")
+        EIP712Type(name: "contents", type: "string"),
       ],
       "Person": [
         EIP712Type(name: "name", type: "string"),
-        EIP712Type(name: "wallet", type: "address")
-      ]
+        EIP712Type(name: "wallet", type: "address"),
+      ],
     ]
 
     let mailTypeHash = EIP712.typeHash("Mail", types: types)
@@ -99,23 +99,24 @@ final class EIP712Tests: XCTestCase {
       "Mail": [
         EIP712Type(name: "from", type: "Person"),
         EIP712Type(name: "to", type: "Person"),
-        EIP712Type(name: "contents", type: "string")
+        EIP712Type(name: "contents", type: "string"),
       ],
       "Person": [
         EIP712Type(name: "name", type: "string"),
-        EIP712Type(name: "wallet", type: "address")
-      ]
+        EIP712Type(name: "wallet", type: "address"),
+      ],
     ]
 
     let encoded = EIP712.encodeType("Mail", types: types)
-    XCTAssertEqual(encoded, "Mail(Person from,Person to,string contents)Person(string name,address wallet)")
+    XCTAssertEqual(
+      encoded, "Mail(Person from,Person to,string contents)Person(string name,address wallet)")
   }
 
   func testEncodeTypeSimple() {
     let types: [String: [EIP712Type]] = [
       "Person": [
         EIP712Type(name: "name", type: "string"),
-        EIP712Type(name: "wallet", type: "address")
+        EIP712Type(name: "wallet", type: "address"),
       ]
     ]
 
@@ -129,13 +130,13 @@ final class EIP712Tests: XCTestCase {
     let types: [String: [EIP712Type]] = [
       "Person": [
         EIP712Type(name: "name", type: "string"),
-        EIP712Type(name: "wallet", type: "address")
+        EIP712Type(name: "wallet", type: "address"),
       ]
     ]
 
     let person: [String: EIP712Value] = [
       "name": .string("Cow"),
-      "wallet": .address(EthereumAddress("0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826")!)
+      "wallet": .address(EthereumAddress("0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826")!),
     ]
 
     let hash = try EIP712.hashStruct("Person", data: person, types: types)
@@ -158,25 +159,25 @@ final class EIP712Tests: XCTestCase {
     let types: [String: [EIP712Type]] = [
       "Person": [
         EIP712Type(name: "name", type: "string"),
-        EIP712Type(name: "wallet", type: "address")
+        EIP712Type(name: "wallet", type: "address"),
       ],
       "Mail": [
         EIP712Type(name: "from", type: "Person"),
         EIP712Type(name: "to", type: "Person"),
-        EIP712Type(name: "contents", type: "string")
-      ]
+        EIP712Type(name: "contents", type: "string"),
+      ],
     ]
 
     let message: [String: EIP712Value] = [
       "from": .struct([
         "name": .string("Cow"),
-        "wallet": .address(EthereumAddress("0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826")!)
+        "wallet": .address(EthereumAddress("0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826")!),
       ]),
       "to": .struct([
         "name": .string("Bob"),
-        "wallet": .address(EthereumAddress("0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB")!)
+        "wallet": .address(EthereumAddress("0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB")!),
       ]),
-      "contents": .string("Hello, Bob!")
+      "contents": .string("Hello, Bob!"),
     ]
 
     let typedData = EIP712TypedData(
@@ -211,25 +212,25 @@ final class EIP712Tests: XCTestCase {
     let types: [String: [EIP712Type]] = [
       "Person": [
         EIP712Type(name: "name", type: "string"),
-        EIP712Type(name: "wallet", type: "address")
+        EIP712Type(name: "wallet", type: "address"),
       ],
       "Mail": [
         EIP712Type(name: "from", type: "Person"),
         EIP712Type(name: "to", type: "Person"),
-        EIP712Type(name: "contents", type: "string")
-      ]
+        EIP712Type(name: "contents", type: "string"),
+      ],
     ]
 
     let message: [String: EIP712Value] = [
       "from": .struct([
         "name": .string("Cow"),
-        "wallet": .address(EthereumAddress("0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826")!)
+        "wallet": .address(EthereumAddress("0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826")!),
       ]),
       "to": .struct([
         "name": .string("Bob"),
-        "wallet": .address(EthereumAddress("0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB")!)
+        "wallet": .address(EthereumAddress("0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB")!),
       ]),
-      "contents": .string("Hello, Bob!")
+      "contents": .string("Hello, Bob!"),
     ]
 
     let typedData = EIP712TypedData(
@@ -267,7 +268,7 @@ final class EIP712Tests: XCTestCase {
         EIP712Type(name: "spender", type: "address"),
         EIP712Type(name: "value", type: "uint256"),
         EIP712Type(name: "nonce", type: "uint256"),
-        EIP712Type(name: "deadline", type: "uint256")
+        EIP712Type(name: "deadline", type: "uint256"),
       ]
     ]
 
@@ -276,7 +277,7 @@ final class EIP712Tests: XCTestCase {
       "spender": .address(EthereumAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")!),
       "value": .uint(Wei("0xde0b6b3a7640000")!),  // 1 token (1e18)
       "nonce": .uint(Wei(0)),
-      "deadline": .uint(Wei(1893456000))
+      "deadline": .uint(Wei(1_893_456_000)),
     ]
 
     let typedData = EIP712TypedData(
@@ -298,19 +299,19 @@ final class EIP712Tests: XCTestCase {
     let types: [String: [EIP712Type]] = [
       "Batch": [
         EIP712Type(name: "targets", type: "address[]"),
-        EIP712Type(name: "values", type: "uint256[]")
+        EIP712Type(name: "values", type: "uint256[]"),
       ]
     ]
 
     let message: [String: EIP712Value] = [
       "targets": .array([
         .address(EthereumAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")!),
-        .address(EthereumAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")!)
+        .address(EthereumAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")!),
       ]),
       "values": .array([
         .uint(Wei(100)),
-        .uint(Wei(200))
-      ])
+        .uint(Wei(200)),
+      ]),
     ]
 
     let typedData = EIP712TypedData(
@@ -332,13 +333,14 @@ final class EIP712Tests: XCTestCase {
     let types: [String: [EIP712Type]] = [
       "Data": [
         EIP712Type(name: "hash", type: "bytes32"),
-        EIP712Type(name: "payload", type: "bytes")
+        EIP712Type(name: "payload", type: "bytes"),
       ]
     ]
 
     let message: [String: EIP712Value] = [
-      "hash": .fixedBytes(Data(hex: "abababababababababababababababababababababababababababababababab")),
-      "payload": .bytes(Data(hex: "1234567890"))
+      "hash": .fixedBytes(
+        Data(hex: "abababababababababababababababababababababababababababababababab")),
+      "payload": .bytes(Data(hex: "1234567890")),
     ]
 
     let typedData = EIP712TypedData(
@@ -361,14 +363,14 @@ final class EIP712Tests: XCTestCase {
       "Order": [
         EIP712Type(name: "active", type: "bool"),
         EIP712Type(name: "amount", type: "uint256"),
-        EIP712Type(name: "price", type: "uint128")
+        EIP712Type(name: "price", type: "uint128"),
       ]
     ]
 
     let message: [String: EIP712Value] = [
       "active": .bool(true),
       "amount": .uint(Wei(1000)),
-      "price": .uint(Wei(500))
+      "price": .uint(Wei(500)),
     ]
 
     let typedData = EIP712TypedData(
@@ -393,12 +395,12 @@ final class EIP712Tests: XCTestCase {
       ],
       "Middle": [
         EIP712Type(name: "inner", type: "Inner"),
-        EIP712Type(name: "name", type: "string")
+        EIP712Type(name: "name", type: "string"),
       ],
       "Outer": [
         EIP712Type(name: "middle", type: "Middle"),
-        EIP712Type(name: "id", type: "uint256")
-      ]
+        EIP712Type(name: "id", type: "uint256"),
+      ],
     ]
 
     let message: [String: EIP712Value] = [
@@ -406,9 +408,9 @@ final class EIP712Tests: XCTestCase {
         "inner": .struct([
           "value": .uint(Wei(42))
         ]),
-        "name": .string("test")
+        "name": .string("test"),
       ]),
-      "id": .uint(Wei(1))
+      "id": .uint(Wei(1)),
     ]
 
     let typedData = EIP712TypedData(

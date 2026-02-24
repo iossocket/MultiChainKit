@@ -7,7 +7,7 @@ import Foundation
 import MultiChainCore
 
 public struct EthereumAccount: Account, Sendable, Equatable, Hashable {
-  public typealias C = Ethereum
+  public typealias C = EvmChain
 
   public let address: EthereumAddress
 

@@ -3,12 +3,11 @@
 //  EthereumKit
 //
 
-
 import Foundation
 import MultiChainCore
 
 public struct EthereumSignableAccount: Account, Signer, Sendable {
-  public typealias C = Ethereum
+  public typealias C = EvmChain
 
   private let signer: EthereumSigner
   private let account: EthereumAccount
@@ -69,7 +68,9 @@ public struct EthereumSignableAccount: Account, Signer, Sendable {
     try self.signer.signPersonalMessage(message)
   }
 
-  public func recoverMessageSigner(message: String, signature: EthereumSignature) throws -> EthereumAddress {
+  public func recoverMessageSigner(message: String, signature: EthereumSignature) throws
+    -> EthereumAddress
+  {
     let messageData = message.data(using: .utf8)!
     let prefix = "\u{19}Ethereum Signed Message:\n\(messageData.count)"
     let prefixedMessage = prefix.data(using: .utf8)! + messageData

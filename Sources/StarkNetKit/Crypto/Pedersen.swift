@@ -4,8 +4,8 @@
 //
 
 import BigInt
-import StarknetCrypto
 import Foundation
+import StarknetCrypto
 
 public enum StarknetHashError: Error {
   case invalidElements

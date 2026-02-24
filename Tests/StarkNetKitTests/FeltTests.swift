@@ -24,7 +24,7 @@ struct FeltTests {
 
   @Test("Initialize from UInt64")
   func initFromUInt64() {
-    let felt = Felt(123456789)
+    let felt = Felt(123_456_789)
     #expect(felt.hexString == "0x75bcd15")
   }
 
@@ -393,7 +393,7 @@ struct FeltTests {
 
   @Test("Bit length")
   func bitLength() {
-    let felt = Felt(0b11111111) // 255
+    let felt = Felt(0b11111111)  // 255
     #expect(felt.bitLength == 8)
 
     let felt2 = Felt(0b100000000)  // 256

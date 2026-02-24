@@ -47,7 +47,8 @@ public struct OpenZeppelinAccount: StarknetAccountType {
   public let classHash: Felt
 
   /// Standard OZ account class hash (Cairo 1, v0.17.0).
-  public static let defaultClassHash = Felt("0x061dac032f228abef9c6626f995015233097ae253a7f72d68552db02f2971b8f")!
+  public static let defaultClassHash = Felt(
+    "0x061dac032f228abef9c6626f995015233097ae253a7f72d68552db02f2971b8f")!
 
   public init(classHash: Felt = OpenZeppelinAccount.defaultClassHash) {
     self.classHash = classHash

@@ -5,8 +5,8 @@
 //  StarkNet signer conforming to Signer + PrivateKeySigner protocols.
 //
 
-import Foundation
 import BigInt
+import Foundation
 import MultiChainCore
 
 public struct StarknetSigner: Signer, PrivateKeySigner, Sendable {

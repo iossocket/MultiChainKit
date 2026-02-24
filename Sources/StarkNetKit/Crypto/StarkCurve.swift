@@ -4,9 +4,9 @@
 //
 
 import BigInt
+import Foundation
 import MultiChainCore
 import StarknetCrypto
-import Foundation
 
 public enum StarkCurveError: Error, Sendable {
   case invalidPrivateKey

@@ -7,14 +7,14 @@ import Foundation
 import MultiChainCore
 
 public final class EthereumProvider: JsonRpcProvider, @unchecked Sendable {
-  public typealias C = Ethereum
+  public typealias C = EvmChain
 
-  public let chain: Ethereum
+  public let chain: EvmChain
   public let session: URLSession
 
   // MARK: - Init
 
-  public init(chain: Ethereum, session: URLSession = .shared) {
+  public init(chain: EvmChain, session: URLSession = .shared) {
     self.chain = chain
     self.session = session
   }
@@ -22,7 +22,7 @@ public final class EthereumProvider: JsonRpcProvider, @unchecked Sendable {
   public init(
     chainId: UInt64, name: String, url: URL, isTestnet: Bool, session: URLSession = .shared
   ) {
-    self.chain = Ethereum(chainId: chainId, name: name, rpcURL: url, isTestnet: isTestnet)
+    self.chain = EvmChain(chainId: chainId, name: name, rpcURL: url, isTestnet: isTestnet)
     self.session = session
   }
 

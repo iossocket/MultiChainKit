@@ -14,26 +14,26 @@ import Testing
 // MARK: - Test ABI Fixtures
 
 private let erc20ABI = """
-[
-  {"type":"function","name":"transfer","inputs":[{"name":"recipient","type":"core::starknet::contract_address::ContractAddress"},{"name":"amount","type":"core::integer::u256"}],"outputs":[{"type":"core::bool"}],"state_mutability":"external"},
-  {"type":"function","name":"balance_of","inputs":[{"name":"account","type":"core::starknet::contract_address::ContractAddress"}],"outputs":[{"type":"core::integer::u256"}],"state_mutability":"view"},
-  {"type":"function","name":"total_supply","inputs":[],"outputs":[{"type":"core::integer::u256"}],"state_mutability":"view"},
-  {"type":"function","name":"approve","inputs":[{"name":"spender","type":"core::starknet::contract_address::ContractAddress"},{"name":"amount","type":"core::integer::u256"}],"outputs":[{"type":"core::bool"}],"state_mutability":"external"},
-  {"type":"struct","name":"core::integer::u256","members":[{"name":"low","type":"core::integer::u128"},{"name":"high","type":"core::integer::u128"}]},
-  {"type":"event","name":"openzeppelin::erc20::Transfer","kind":"struct","members":[{"name":"from","type":"core::starknet::contract_address::ContractAddress","kind":"key"},{"name":"to","type":"core::starknet::contract_address::ContractAddress","kind":"key"},{"name":"value","type":"core::integer::u256","kind":"data"}]},
-  {"type":"event","name":"openzeppelin::erc20::Approval","kind":"struct","members":[{"name":"owner","type":"core::starknet::contract_address::ContractAddress","kind":"key"},{"name":"spender","type":"core::starknet::contract_address::ContractAddress","kind":"key"},{"name":"value","type":"core::integer::u256","kind":"data"}]}
-]
-"""
+  [
+    {"type":"function","name":"transfer","inputs":[{"name":"recipient","type":"core::starknet::contract_address::ContractAddress"},{"name":"amount","type":"core::integer::u256"}],"outputs":[{"type":"core::bool"}],"state_mutability":"external"},
+    {"type":"function","name":"balance_of","inputs":[{"name":"account","type":"core::starknet::contract_address::ContractAddress"}],"outputs":[{"type":"core::integer::u256"}],"state_mutability":"view"},
+    {"type":"function","name":"total_supply","inputs":[],"outputs":[{"type":"core::integer::u256"}],"state_mutability":"view"},
+    {"type":"function","name":"approve","inputs":[{"name":"spender","type":"core::starknet::contract_address::ContractAddress"},{"name":"amount","type":"core::integer::u256"}],"outputs":[{"type":"core::bool"}],"state_mutability":"external"},
+    {"type":"struct","name":"core::integer::u256","members":[{"name":"low","type":"core::integer::u128"},{"name":"high","type":"core::integer::u128"}]},
+    {"type":"event","name":"openzeppelin::erc20::Transfer","kind":"struct","members":[{"name":"from","type":"core::starknet::contract_address::ContractAddress","kind":"key"},{"name":"to","type":"core::starknet::contract_address::ContractAddress","kind":"key"},{"name":"value","type":"core::integer::u256","kind":"data"}]},
+    {"type":"event","name":"openzeppelin::erc20::Approval","kind":"struct","members":[{"name":"owner","type":"core::starknet::contract_address::ContractAddress","kind":"key"},{"name":"spender","type":"core::starknet::contract_address::ContractAddress","kind":"key"},{"name":"value","type":"core::integer::u256","kind":"data"}]}
+  ]
+  """
 
 private let interfaceABI = """
-[
-  {"type":"interface","name":"IERC20","items":[
-    {"type":"function","name":"name","inputs":[],"outputs":[{"type":"core::byte_array::ByteArray"}],"state_mutability":"view"},
-    {"type":"function","name":"symbol","inputs":[],"outputs":[{"type":"core::byte_array::ByteArray"}],"state_mutability":"view"}
-  ]},
-  {"type":"impl","name":"ERC20Impl","interface_name":"IERC20"}
-]
-"""
+  [
+    {"type":"interface","name":"IERC20","items":[
+      {"type":"function","name":"name","inputs":[],"outputs":[{"type":"core::byte_array::ByteArray"}],"state_mutability":"view"},
+      {"type":"function","name":"symbol","inputs":[],"outputs":[{"type":"core::byte_array::ByteArray"}],"state_mutability":"view"}
+    ]},
+    {"type":"impl","name":"ERC20Impl","interface_name":"IERC20"}
+  ]
+  """
 
 // MARK: - CairoType.parse
 
@@ -63,7 +63,8 @@ struct CairoTypeParseTests {
 
   @Test("parse ContractAddress")
   func contractAddress() throws {
-    #expect(try CairoType.parse("core::starknet::contract_address::ContractAddress") == .contractAddress)
+    #expect(
+      try CairoType.parse("core::starknet::contract_address::ContractAddress") == .contractAddress)
   }
 
   @Test("parse ByteArray")
@@ -106,10 +107,12 @@ struct CairoTypeParseTests {
   @Test("parse struct from registry")
   func structLookup() throws {
     let structs: [String: StarknetABIStruct] = [
-      "my::Point": StarknetABIStruct(name: "my::Point", members: [
-        StarknetABIStructMember(name: "x", type: "core::felt252"),
-        StarknetABIStructMember(name: "y", type: "core::felt252"),
-      ])
+      "my::Point": StarknetABIStruct(
+        name: "my::Point",
+        members: [
+          StarknetABIStructMember(name: "x", type: "core::felt252"),
+          StarknetABIStructMember(name: "y", type: "core::felt252"),
+        ])
     ]
     #expect(try CairoType.parse("my::Point", structs: structs) == .tuple([.felt252, .felt252]))
   }
@@ -117,10 +120,12 @@ struct CairoTypeParseTests {
   @Test("parse enum from registry")
   func enumLookup() throws {
     let enums: [String: StarknetABIEnum] = [
-      "my::Status": StarknetABIEnum(name: "my::Status", variants: [
-        StarknetABIEnumVariant(name: "Active", type: "()"),
-        StarknetABIEnumVariant(name: "Paused", type: "()"),
-      ])
+      "my::Status": StarknetABIEnum(
+        name: "my::Status",
+        variants: [
+          StarknetABIEnumVariant(name: "Active", type: "()"),
+          StarknetABIEnumVariant(name: "Paused", type: "()"),
+        ])
     ]
     #expect(try CairoType.parse("my::Status", enums: enums) == .enum([.tuple([]), .tuple([])]))
   }
@@ -141,8 +146,8 @@ struct StarknetABIItemCodableTests {
   @Test("decode function item")
   func decodeFunction() throws {
     let json = """
-    {"type":"function","name":"transfer","inputs":[{"name":"recipient","type":"core::starknet::contract_address::ContractAddress"}],"outputs":[{"type":"core::bool"}],"state_mutability":"external"}
-    """
+      {"type":"function","name":"transfer","inputs":[{"name":"recipient","type":"core::starknet::contract_address::ContractAddress"}],"outputs":[{"type":"core::bool"}],"state_mutability":"external"}
+      """
     let item = try JSONDecoder().decode(StarknetABIItem.self, from: json.data(using: .utf8)!)
     guard case .function(let f) = item else {
       Issue.record("Expected function")
@@ -158,8 +163,8 @@ struct StarknetABIItemCodableTests {
   @Test("decode constructor item")
   func decodeConstructor() throws {
     let json = """
-    {"type":"constructor","name":"constructor","inputs":[{"name":"owner","type":"core::starknet::contract_address::ContractAddress"}]}
-    """
+      {"type":"constructor","name":"constructor","inputs":[{"name":"owner","type":"core::starknet::contract_address::ContractAddress"}]}
+      """
     let item = try JSONDecoder().decode(StarknetABIItem.self, from: json.data(using: .utf8)!)
     guard case .constructor(let c) = item else {
       Issue.record("Expected constructor")
@@ -172,8 +177,8 @@ struct StarknetABIItemCodableTests {
   @Test("decode event item")
   func decodeEvent() throws {
     let json = """
-    {"type":"event","name":"Transfer","kind":"struct","members":[{"name":"from","type":"core::starknet::contract_address::ContractAddress","kind":"key"},{"name":"to","type":"core::starknet::contract_address::ContractAddress","kind":"key"},{"name":"value","type":"core::integer::u256","kind":"data"}]}
-    """
+      {"type":"event","name":"Transfer","kind":"struct","members":[{"name":"from","type":"core::starknet::contract_address::ContractAddress","kind":"key"},{"name":"to","type":"core::starknet::contract_address::ContractAddress","kind":"key"},{"name":"value","type":"core::integer::u256","kind":"data"}]}
+      """
     let item = try JSONDecoder().decode(StarknetABIItem.self, from: json.data(using: .utf8)!)
     guard case .event(let e) = item else {
       Issue.record("Expected event")
@@ -189,8 +194,8 @@ struct StarknetABIItemCodableTests {
   @Test("decode struct item")
   func decodeStruct() throws {
     let json = """
-    {"type":"struct","name":"core::integer::u256","members":[{"name":"low","type":"core::integer::u128"},{"name":"high","type":"core::integer::u128"}]}
-    """
+      {"type":"struct","name":"core::integer::u256","members":[{"name":"low","type":"core::integer::u128"},{"name":"high","type":"core::integer::u128"}]}
+      """
     let item = try JSONDecoder().decode(StarknetABIItem.self, from: json.data(using: .utf8)!)
     guard case .structDef(let s) = item else {
       Issue.record("Expected struct")
@@ -203,8 +208,8 @@ struct StarknetABIItemCodableTests {
   @Test("decode enum item")
   func decodeEnum() throws {
     let json = """
-    {"type":"enum","name":"core::bool","variants":[{"name":"False","type":"()"},{"name":"True","type":"()"}]}
-    """
+      {"type":"enum","name":"core::bool","variants":[{"name":"False","type":"()"},{"name":"True","type":"()"}]}
+      """
     let item = try JSONDecoder().decode(StarknetABIItem.self, from: json.data(using: .utf8)!)
     guard case .enumDef(let e) = item else {
       Issue.record("Expected enum")
@@ -217,8 +222,8 @@ struct StarknetABIItemCodableTests {
   @Test("decode interface item with nested functions")
   func decodeInterface() throws {
     let json = """
-    {"type":"interface","name":"IERC20","items":[{"type":"function","name":"name","inputs":[],"outputs":[{"type":"core::byte_array::ByteArray"}],"state_mutability":"view"}]}
-    """
+      {"type":"interface","name":"IERC20","items":[{"type":"function","name":"name","inputs":[],"outputs":[{"type":"core::byte_array::ByteArray"}],"state_mutability":"view"}]}
+      """
     let item = try JSONDecoder().decode(StarknetABIItem.self, from: json.data(using: .utf8)!)
     guard case .interface(let iface) = item else {
       Issue.record("Expected interface")
@@ -236,8 +241,8 @@ struct StarknetABIItemCodableTests {
   @Test("decode impl item")
   func decodeImpl() throws {
     let json = """
-    {"type":"impl","name":"ERC20Impl","interface_name":"IERC20"}
-    """
+      {"type":"impl","name":"ERC20Impl","interface_name":"IERC20"}
+      """
     let item = try JSONDecoder().decode(StarknetABIItem.self, from: json.data(using: .utf8)!)
     guard case .impl(let i) = item else {
       Issue.record("Expected impl")
@@ -263,7 +268,8 @@ struct StarknetContractInitTests {
 
   @Test("init from JSON ABI string")
   func initFromJson() throws {
-    let contract = try StarknetContract(address: Felt(0xABC), abiJson: erc20ABI, provider: Self.provider)
+    let contract = try StarknetContract(
+      address: Felt(0xABC), abiJson: erc20ABI, provider: Self.provider)
     #expect(contract.address == Felt(0xABC))
     #expect(!contract.functions.isEmpty)
     #expect(!contract.events.isEmpty)
@@ -272,7 +278,8 @@ struct StarknetContractInitTests {
 
   @Test("functions indexed by name")
   func functionsIndexed() throws {
-    let contract = try StarknetContract(address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
+    let contract = try StarknetContract(
+      address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
     #expect(contract.functions["transfer"] != nil)
     #expect(contract.functions["balance_of"] != nil)
     #expect(contract.functions["total_supply"] != nil)
@@ -281,20 +288,23 @@ struct StarknetContractInitTests {
 
   @Test("events indexed by short name")
   func eventsIndexed() throws {
-    let contract = try StarknetContract(address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
+    let contract = try StarknetContract(
+      address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
     #expect(contract.events["Transfer"] != nil)
     #expect(contract.events["Approval"] != nil)
   }
 
   @Test("structs indexed by full name")
   func structsIndexed() throws {
-    let contract = try StarknetContract(address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
+    let contract = try StarknetContract(
+      address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
     #expect(contract.structs["core::integer::u256"] != nil)
   }
 
   @Test("interface functions flattened into functions dict")
   func interfaceFlattened() throws {
-    let contract = try StarknetContract(address: Felt(0x1), abiJson: interfaceABI, provider: Self.provider)
+    let contract = try StarknetContract(
+      address: Felt(0x1), abiJson: interfaceABI, provider: Self.provider)
     #expect(contract.functions["name"] != nil)
     #expect(contract.functions["symbol"] != nil)
   }
@@ -309,7 +319,8 @@ struct StarknetContractEncodeCallTests {
 
   @Test("encodeCall with no args")
   func noArgs() throws {
-    let contract = try StarknetContract(address: Felt(0xABC), abiJson: erc20ABI, provider: Self.provider)
+    let contract = try StarknetContract(
+      address: Felt(0xABC), abiJson: erc20ABI, provider: Self.provider)
     let call = try contract.encodeCall(function: "total_supply")
     #expect(call.contractAddress == Felt(0xABC))
     #expect(call.entryPointSelector == StarknetKeccak.functionSelector("total_supply"))
@@ -318,7 +329,8 @@ struct StarknetContractEncodeCallTests {
 
   @Test("encodeCall transfer: recipient + u256")
   func transferCalldata() throws {
-    let contract = try StarknetContract(address: Felt(0xABC), abiJson: erc20ABI, provider: Self.provider)
+    let contract = try StarknetContract(
+      address: Felt(0xABC), abiJson: erc20ABI, provider: Self.provider)
     let recipient = Felt(0xBEEF)
     let call = try contract.encodeCall(
       function: "transfer",
@@ -334,7 +346,8 @@ struct StarknetContractEncodeCallTests {
 
   @Test("encodeCall balance_of: single address arg")
   func balanceOf() throws {
-    let contract = try StarknetContract(address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
+    let contract = try StarknetContract(
+      address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
     let account = Felt(0xDEAD)
     let call = try contract.encodeCall(function: "balance_of", args: [.contractAddress(account)])
     #expect(call.calldata == [account])
@@ -342,7 +355,8 @@ struct StarknetContractEncodeCallTests {
 
   @Test("encodeCall function not found throws")
   func functionNotFound() throws {
-    let contract = try StarknetContract(address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
+    let contract = try StarknetContract(
+      address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
     #expect(throws: StarknetContractError.self) {
       _ = try contract.encodeCall(function: "nonexistent")
     }
@@ -350,7 +364,8 @@ struct StarknetContractEncodeCallTests {
 
   @Test("encodeCall argument count mismatch throws")
   func argCountMismatch() throws {
-    let contract = try StarknetContract(address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
+    let contract = try StarknetContract(
+      address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
     #expect(throws: StarknetContractError.self) {
       _ = try contract.encodeCall(function: "transfer", args: [.contractAddress(Felt(0x1))])
     }
@@ -358,17 +373,22 @@ struct StarknetContractEncodeCallTests {
 
   @Test("encodeCall result usable with provider.callRequest")
   func callRequestCompatibility() throws {
-    let contract = try StarknetContract(address: Felt(0xABC), abiJson: erc20ABI, provider: Self.provider)
-    let call = try contract.encodeCall(function: "balance_of", args: [.contractAddress(Felt(0xFACE))])
+    let contract = try StarknetContract(
+      address: Felt(0xABC), abiJson: erc20ABI, provider: Self.provider)
+    let call = try contract.encodeCall(
+      function: "balance_of", args: [.contractAddress(Felt(0xFACE))])
     let request = Self.provider.callRequest(call: call)
     #expect(request.method == "starknet_call")
   }
 
   @Test("multiple encodeCall results usable for multicall")
   func multicallCompatibility() throws {
-    let contract = try StarknetContract(address: Felt(0xABC), abiJson: erc20ABI, provider: Self.provider)
-    let t1 = try contract.encodeCall(function: "transfer", args: [.contractAddress(Felt(0xA)), .u256(BigUInt(100))])
-    let t2 = try contract.encodeCall(function: "transfer", args: [.contractAddress(Felt(0xB)), .u256(BigUInt(200))])
+    let contract = try StarknetContract(
+      address: Felt(0xABC), abiJson: erc20ABI, provider: Self.provider)
+    let t1 = try contract.encodeCall(
+      function: "transfer", args: [.contractAddress(Felt(0xA)), .u256(BigUInt(100))])
+    let t2 = try contract.encodeCall(
+      function: "transfer", args: [.contractAddress(Felt(0xB)), .u256(BigUInt(200))])
     let multicall = StarknetCall.encodeMulticall([t1, t2])
     #expect(!multicall.isEmpty)
   }
@@ -383,7 +403,8 @@ struct StarknetContractDecodeEventTests {
 
   @Test("decode Transfer event")
   func decodeTransfer() throws {
-    let contract = try StarknetContract(address: Felt(0xABC), abiJson: erc20ABI, provider: Self.provider)
+    let contract = try StarknetContract(
+      address: Felt(0xABC), abiJson: erc20ABI, provider: Self.provider)
 
     let selector = StarknetKeccak.hash(Data("Transfer".utf8))
     let from = Felt(0xAAA)
@@ -400,7 +421,8 @@ struct StarknetContractDecodeEventTests {
 
   @Test("decode Approval event")
   func decodeApproval() throws {
-    let contract = try StarknetContract(address: Felt(0xABC), abiJson: erc20ABI, provider: Self.provider)
+    let contract = try StarknetContract(
+      address: Felt(0xABC), abiJson: erc20ABI, provider: Self.provider)
 
     let selector = StarknetKeccak.hash(Data("Approval".utf8))
     let owner = Felt(0x111)
@@ -417,7 +439,8 @@ struct StarknetContractDecodeEventTests {
 
   @Test("decode event not found throws")
   func eventNotFound() throws {
-    let contract = try StarknetContract(address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
+    let contract = try StarknetContract(
+      address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
     #expect(throws: StarknetContractError.self) {
       _ = try contract.decodeEvent(name: "NonExistent", keys: [.zero], data: [])
     }
@@ -433,7 +456,9 @@ struct StarknetContractErrorTests {
   func equatable() {
     #expect(StarknetContractError.functionNotFound("foo") == .functionNotFound("foo"))
     #expect(StarknetContractError.eventNotFound("bar") == .eventNotFound("bar"))
-    #expect(StarknetContractError.argumentCountMismatch(expected: 2, got: 1) == .argumentCountMismatch(expected: 2, got: 1))
+    #expect(
+      StarknetContractError.argumentCountMismatch(expected: 2, got: 1)
+        == .argumentCountMismatch(expected: 2, got: 1))
     #expect(StarknetContractError.invalidABI("bad") == .invalidABI("bad"))
   }
 }
@@ -445,8 +470,10 @@ struct StarknetDecodedEventTests {
 
   @Test("equatable")
   func equatable() {
-    let a = StarknetDecodedEvent(name: "Transfer", keys: ["from": .contractAddress(Felt(1))], data: [:])
-    let b = StarknetDecodedEvent(name: "Transfer", keys: ["from": .contractAddress(Felt(1))], data: [:])
+    let a = StarknetDecodedEvent(
+      name: "Transfer", keys: ["from": .contractAddress(Felt(1))], data: [:])
+    let b = StarknetDecodedEvent(
+      name: "Transfer", keys: ["from": .contractAddress(Felt(1))], data: [:])
     #expect(a == b)
   }
 }
@@ -459,9 +486,10 @@ struct StarknetFeeEstimateTests {
   @Test("decode from JSON")
   func decodeFromJson() throws {
     let json = """
-    {"gas_consumed":"0x1a4","gas_price":"0x3b9aca00","data_gas_consumed":"0x0","data_gas_price":"0x1","overall_fee":"0x61c46800","fee_unit":"WEI"}
-    """
-    let estimate = try JSONDecoder().decode(StarknetFeeEstimate.self, from: json.data(using: .utf8)!)
+      {"gas_consumed":"0x1a4","gas_price":"0x3b9aca00","data_gas_consumed":"0x0","data_gas_price":"0x1","overall_fee":"0x61c46800","fee_unit":"WEI"}
+      """
+    let estimate = try JSONDecoder().decode(
+      StarknetFeeEstimate.self, from: json.data(using: .utf8)!)
     #expect(estimate.gasConsumed == "0x1a4")
     #expect(estimate.gasPrice == "0x3b9aca00")
     #expect(estimate.dataGasConsumed == "0x0")
@@ -472,17 +500,18 @@ struct StarknetFeeEstimateTests {
   @Test("overallFeeFelt parses hex")
   func overallFeeFelt() throws {
     let json = """
-    {"gas_consumed":"0x1","gas_price":"0x1","data_gas_consumed":"0x0","data_gas_price":"0x1","overall_fee":"0xff","fee_unit":"WEI"}
-    """
-    let estimate = try JSONDecoder().decode(StarknetFeeEstimate.self, from: json.data(using: .utf8)!)
+      {"gas_consumed":"0x1","gas_price":"0x1","data_gas_consumed":"0x0","data_gas_price":"0x1","overall_fee":"0xff","fee_unit":"WEI"}
+      """
+    let estimate = try JSONDecoder().decode(
+      StarknetFeeEstimate.self, from: json.data(using: .utf8)!)
     #expect(estimate.overallFeeFelt == Felt(255))
   }
 
   @Test("equatable")
   func equatable() throws {
     let json = """
-    {"gas_consumed":"0x1","gas_price":"0x2","data_gas_consumed":"0x0","data_gas_price":"0x1","overall_fee":"0x3","fee_unit":"WEI"}
-    """
+      {"gas_consumed":"0x1","gas_price":"0x2","data_gas_consumed":"0x0","data_gas_price":"0x1","overall_fee":"0x3","fee_unit":"WEI"}
+      """
     let a = try JSONDecoder().decode(StarknetFeeEstimate.self, from: json.data(using: .utf8)!)
     let b = try JSONDecoder().decode(StarknetFeeEstimate.self, from: json.data(using: .utf8)!)
     #expect(a == b)
@@ -528,9 +557,10 @@ struct StarknetEventsResponseTests {
   @Test("decode response with events")
   func decodeWithEvents() throws {
     let json = """
-    {"events":[{"from_address":"0xabc","keys":["0x1","0x2"],"data":["0x3"],"block_hash":"0xdef","block_number":42,"transaction_hash":"0x999"}],"continuation_token":"token123"}
-    """
-    let response = try JSONDecoder().decode(StarknetEventsResponse.self, from: json.data(using: .utf8)!)
+      {"events":[{"from_address":"0xabc","keys":["0x1","0x2"],"data":["0x3"],"block_hash":"0xdef","block_number":42,"transaction_hash":"0x999"}],"continuation_token":"token123"}
+      """
+    let response = try JSONDecoder().decode(
+      StarknetEventsResponse.self, from: json.data(using: .utf8)!)
     #expect(response.events.count == 1)
     #expect(response.continuationToken == "token123")
     #expect(response.events[0].fromAddress == "0xabc")
@@ -541,9 +571,10 @@ struct StarknetEventsResponseTests {
   @Test("decode response without continuation token")
   func decodeNoContinuation() throws {
     let json = """
-    {"events":[]}
-    """
-    let response = try JSONDecoder().decode(StarknetEventsResponse.self, from: json.data(using: .utf8)!)
+      {"events":[]}
+      """
+    let response = try JSONDecoder().decode(
+      StarknetEventsResponse.self, from: json.data(using: .utf8)!)
     #expect(response.events.isEmpty)
     #expect(response.continuationToken == nil)
   }
@@ -551,9 +582,10 @@ struct StarknetEventsResponseTests {
   @Test("feltKeys and feltData convert hex strings")
   func feltConversion() throws {
     let json = """
-    {"from_address":"0x1","keys":["0xa","0xb"],"data":["0xc","0xd"],"block_hash":"0x0","block_number":0,"transaction_hash":"0x0"}
-    """
-    let event = try JSONDecoder().decode(StarknetEmittedEventWithContext.self, from: json.data(using: .utf8)!)
+      {"from_address":"0x1","keys":["0xa","0xb"],"data":["0xc","0xd"],"block_hash":"0x0","block_number":0,"transaction_hash":"0x0"}
+      """
+    let event = try JSONDecoder().decode(
+      StarknetEmittedEventWithContext.self, from: json.data(using: .utf8)!)
     #expect(event.feltKeys == [Felt(0xa), Felt(0xb)])
     #expect(event.feltData == [Felt(0xc), Felt(0xd)])
   }
@@ -568,7 +600,8 @@ struct StarknetContractGetEventsValidationTests {
 
   @Test("getEvents throws eventNotFound for unknown event")
   func eventNotFound() async throws {
-    let contract = try StarknetContract(address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
+    let contract = try StarknetContract(
+      address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
     do {
       _ = try await contract.getEvents(eventName: "NonExistent")
       Issue.record("Expected eventNotFound error")

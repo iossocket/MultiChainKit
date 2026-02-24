@@ -54,7 +54,9 @@ struct StarknetReceiptTests {
     let receipt = try JSONDecoder().decode(StarknetReceipt.self, from: data)
 
     #expect(receipt.type == "INVOKE")
-    #expect(receipt.transactionHashHex == "0x06a09ffbf590de3e2b30fca4f4f2b0e48f0e0d183e6e22f9cbaa0164f7e8c30a")
+    #expect(
+      receipt.transactionHashHex
+        == "0x06a09ffbf590de3e2b30fca4f4f2b0e48f0e0d183e6e22f9cbaa0164f7e8c30a")
     #expect(receipt.isSuccess)
     #expect(!receipt.isReverted)
     #expect(receipt.blockNumber == 123456)
@@ -94,7 +96,8 @@ struct StarknetReceiptTests {
     let event = receipt.events[0]
     #expect(event.feltKeys.count == 1)
     #expect(event.feltData.count == 3)
-    #expect(event.fromAddress == "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7")
+    #expect(
+      event.fromAddress == "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7")
   }
 
   @Test("Execution resources decoding")
@@ -198,7 +201,9 @@ struct StarknetReceiptTests {
     let receipt = try JSONDecoder().decode(StarknetReceipt.self, from: data)
 
     #expect(receipt.type == "DEPLOY_ACCOUNT")
-    #expect(receipt.contractAddress == "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d")
+    #expect(
+      receipt.contractAddress
+        == "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d")
     #expect(receipt.isAcceptedOnL1)
   }
 

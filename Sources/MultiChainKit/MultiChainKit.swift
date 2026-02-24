@@ -11,12 +11,13 @@
 
 // MARK: - MultiChainWallet
 
-/// Convenience facade that derives Ethereum and Starknet accounts from a single mnemonic.
+/// Convenience facade that derives EVM and Starknet accounts from a single mnemonic.
 public struct MultiChainWallet: Sendable {
   public private(set) var ethereum: EthereumSignableAccount
   public private(set) var starknet: StarknetAccount
 
   private let mnemonic: String
+  private let evmSigner: EthereumSigner
   private let ethereumPath: DerivationPath
   private let starknetPath: DerivationPath
 
@@ -33,21 +34,25 @@ public struct MultiChainWallet: Sendable {
     self.starknetPath = starknetPath
 
     // Ethereum: mnemonic → signer → account
-    self.ethereum = try EthereumSignableAccount(mnemonic: mnemonic, path: ethereumPath)
+    let signer = try EthereumSigner(mnemonic: mnemonic, path: ethereumPath)
+    self.evmSigner = signer
+    self.ethereum = try EthereumSignableAccount(signer)
 
     // Starknet: mnemonic → signer → compute address → account
-    let signer = try StarknetSigner(mnemonic: mnemonic, path: starknetPath)
-    guard let pubKey = signer.publicKeyFelt else {
+    let starkSigner = try StarknetSigner(mnemonic: mnemonic, path: starknetPath)
+    guard let pubKey = starkSigner.publicKeyFelt else {
       throw SignerError.publicKeyDerivationFailed
     }
     let address = try starknetAccountType.computeAddress(publicKey: pubKey, salt: pubKey)
-    self.starknet = StarknetAccount(signer: signer, address: address, chain: starknetChain)
+    self.starknet = StarknetAccount(signer: starkSigner, address: address, chain: starknetChain)
   }
 
-  /// Attach an Ethereum provider to the wallet.
   public mutating func connectEthereum(provider: EthereumProvider) throws {
-    self.ethereum = try EthereumSignableAccount(
-      mnemonic: mnemonic, path: ethereumPath, provider: provider)
+    self.ethereum = try EthereumSignableAccount(evmSigner, provider: provider)
+  }
+
+  public func evmAccount(provider: EthereumProvider) throws -> EthereumSignableAccount {
+    try EthereumSignableAccount(evmSigner, provider: provider)
   }
 
   /// Attach a Starknet provider to the wallet.

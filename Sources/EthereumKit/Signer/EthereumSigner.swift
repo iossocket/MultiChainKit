@@ -7,7 +7,7 @@ import Foundation
 import MultiChainCore
 
 public struct EthereumSigner: Signer, PrivateKeySigner, MnemonicSigner, Sendable {
-  public typealias C = Ethereum
+  public typealias C = EvmChain
 
   private let privateKey: Data
 

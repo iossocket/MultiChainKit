@@ -88,43 +88,51 @@ struct StarknetAddressTests {
   @Test("Checksum: starknet.js test vector")
   func checksumStarknetJS() {
     let addr = StarknetAddress("0x2fd23d9182193775423497fc0c472e156c57c69e4089a1967fb288a2d84e914")!
-    #expect(addr.checksummed == "0x02Fd23d9182193775423497fc0c472E156C57C69E4089A1967fb288A2d84e914")
+    #expect(
+      addr.checksummed == "0x02Fd23d9182193775423497fc0c472E156C57C69E4089A1967fb288A2d84e914")
   }
 
   @Test("Checksum: abcdef pattern")
   func checksumAbcdefPattern() {
-    let addr = StarknetAddress("0x00abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefab")!
-    #expect(addr.checksummed == "0x00AbcDefaBcdefabCDEfAbCDEfAbcdEFAbCDEfabCDefaBCdEFaBcDeFaBcDefAb")
+    let addr = StarknetAddress(
+      "0x00abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefab")!
+    #expect(
+      addr.checksummed == "0x00AbcDefaBcdefabCDEfAbCDEfAbcdEFAbCDEfabCDefaBCdEFaBcDeFaBcDefAb")
   }
 
   @Test("Checksum: fedcba pattern")
   func checksumFedcbaPattern() {
     let addr = StarknetAddress("0xfedcbafedcbafedcbafedcbafedcbafedcbafedcbafedcbafedcbafedcbafe")!
-    #expect(addr.checksummed == "0x00fEdCBafEdcbafEDCbAFedCBAFeDCbafEdCBAfeDcbaFeDCbAfEDCbAfeDcbAFE")
+    #expect(
+      addr.checksummed == "0x00fEdCBafEdcbafEDCbAFedCBAFeDCbafEdCBAfeDcbaFeDCbAfEDCbAfeDcbAFE")
   }
 
   @Test("Checksum: small value 0xa")
   func checksumSmallValue() {
     let addr = StarknetAddress("0xa")!
-    #expect(addr.checksummed == "0x000000000000000000000000000000000000000000000000000000000000000A")
+    #expect(
+      addr.checksummed == "0x000000000000000000000000000000000000000000000000000000000000000A")
   }
 
   @Test("Checksum: zero address")
   func checksumZero() {
     let addr = StarknetAddress("0x0")!
-    #expect(addr.checksummed == "0x0000000000000000000000000000000000000000000000000000000000000000")
+    #expect(
+      addr.checksummed == "0x0000000000000000000000000000000000000000000000000000000000000000")
   }
 
   @Test("Checksum: starknet.js JSDoc example")
   func checksumJSDocExample() {
     let addr = StarknetAddress("0x90591d9fa3efc87067d95a643f8455e0b8190eb8cb7bfd39e4fb7571fdf")!
-    #expect(addr.checksummed == "0x0000090591D9fA3EfC87067d95a643f8455E0b8190eb8Cb7bFd39e4fb7571fDF")
+    #expect(
+      addr.checksummed == "0x0000090591D9fA3EfC87067d95a643f8455E0b8190eb8Cb7bFd39e4fb7571fDF")
   }
 
   @Test("Checksum: ETH token contract address")
   func checksumEthToken() {
     let addr = StarknetAddress("0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7")!
-    #expect(addr.checksummed == "0x049D36570D4e46f48e99674bd3fcc84644DdD6b96F7C741B1562B82f9e004dC7")
+    #expect(
+      addr.checksummed == "0x049D36570D4e46f48e99674bd3fcc84644DdD6b96F7C741B1562B82f9e004dC7")
   }
 
   @Test("Checksum: short address")
@@ -184,7 +192,8 @@ struct StarknetAddressTests {
     let json = "\"0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7\""
     let data = json.data(using: .utf8)!
     let addr = try JSONDecoder().decode(StarknetAddress.self, from: data)
-    #expect(addr == StarknetAddress("0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7"))
+    #expect(
+      addr == StarknetAddress("0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7"))
   }
 
   @Test("Decode invalid JSON throws")

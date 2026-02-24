@@ -14,19 +14,19 @@ public struct StarknetReceipt: ChainReceipt, Sendable {
 
   // MARK: - Raw JSON fields
 
-  public let type: String                          // "INVOKE", "DECLARE", "DEPLOY", "DEPLOY_ACCOUNT", "L1_HANDLER"
+  public let type: String  // "INVOKE", "DECLARE", "DEPLOY", "DEPLOY_ACCOUNT", "L1_HANDLER"
   public let transactionHashHex: String
   public let actualFee: StarknetFeePayment
-  public let executionStatus: String               // "SUCCEEDED" or "REVERTED"
-  public let finalityStatus: String                // "ACCEPTED_ON_L2" or "ACCEPTED_ON_L1"
+  public let executionStatus: String  // "SUCCEEDED" or "REVERTED"
+  public let finalityStatus: String  // "ACCEPTED_ON_L2" or "ACCEPTED_ON_L1"
   public let revertReason: String?
-  public let blockHash: String?                    // nil if pending
-  public let blockNumberValue: UInt64?             // nil if pending
+  public let blockHash: String?  // nil if pending
+  public let blockNumberValue: UInt64?  // nil if pending
   public let messagesSent: [StarknetMessageToL1]
   public let events: [StarknetReceiptEvent]
   public let executionResources: StarknetExecutionResources
-  public let contractAddress: String?              // DEPLOY / DEPLOY_ACCOUNT only
-  public let messageHash: String?                  // L1_HANDLER only
+  public let contractAddress: String?  // DEPLOY / DEPLOY_ACCOUNT only
+  public let messageHash: String?  // L1_HANDLER only
 
   enum CodingKeys: String, CodingKey {
     case type
@@ -107,7 +107,7 @@ public struct StarknetTransactionStatus: Decodable, Sendable, Equatable {
 
 public struct StarknetFeePayment: Codable, Sendable, Equatable {
   public let amount: String
-  public let unit: String   // "WEI" (V1 txns) or "FRI" (V3 txns, STRK-denominated)
+  public let unit: String  // "WEI" (V1 txns) or "FRI" (V3 txns, STRK-denominated)
 
   public var amountFelt: Felt {
     Felt(amount) ?? .zero

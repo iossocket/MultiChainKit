@@ -11,8 +11,10 @@ import Testing
 
 @testable import StarknetKit
 
-private let testPrivateKey = Felt("0x4070e7abfa479cf8a30d38895e93800a88862c4a65aa00e2b11495998818046")!
-private let testPublicKey = Felt("0x7697f8f9a4c3e2b1efd882294462fda2ca9c439d02a3a04cf0a0cdb627f11ee")!
+private let testPrivateKey = Felt(
+  "0x4070e7abfa479cf8a30d38895e93800a88862c4a65aa00e2b11495998818046")!
+private let testPublicKey = Felt(
+  "0x7697f8f9a4c3e2b1efd882294462fda2ca9c439d02a3a04cf0a0cdb627f11ee")!
 
 @Suite("StarkCurve Tests")
 struct StarkCurveTests {
@@ -48,7 +50,8 @@ struct StarkCurveTests {
     #expect(signature.r == expectedR)
     #expect(signature.s == expectedS)
 
-    let valid = try StarkCurve.verify(publicKey: publicKey, hash: hash, r: signature.r, s: signature.s)
+    let valid = try StarkCurve.verify(
+      publicKey: publicKey, hash: hash, r: signature.r, s: signature.s)
     #expect(valid)
   }
 

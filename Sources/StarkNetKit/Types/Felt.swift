@@ -17,7 +17,8 @@ public struct Felt: ChainValue, Sendable {
   // MARK: - Constants
 
   /// StarkNet prime: 2^251 + 17 * 2^192 + 1
-  public static let PRIME: BigUInt = BigUInt("800000000000011000000000000000000000000000000000000000000000001", radix: 16)!
+  public static let PRIME: BigUInt = BigUInt(
+    "800000000000011000000000000000000000000000000000000000000000001", radix: 16)!
 
   // MARK: - Properties
 

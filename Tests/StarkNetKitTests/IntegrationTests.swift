@@ -143,7 +143,8 @@ struct InvokeV3MulticallTests {
   @Test("V1 and V3 produce different hashes for same logical call")
   func v1v3DifferentHashes() throws {
     let signer = try StarknetSigner(privateKey: testPrivateKey)
-    let addr = try OpenZeppelinAccount().computeAddress(publicKey: signer.publicKeyFelt!, salt: signer.publicKeyFelt!)
+    let addr = try OpenZeppelinAccount().computeAddress(
+      publicKey: signer.publicKeyFelt!, salt: signer.publicKeyFelt!)
     let account = StarknetAccount(signer: signer, address: addr, chain: sepolia)
 
     let call = StarknetCall(contractAddress: Felt(0x1), entrypoint: "foo", calldata: [Felt(1)])
@@ -234,7 +235,8 @@ struct DeployAccountTests {
   @Test("sendTransactionRequest builds correct RPC method for deploy")
   func sendDeployRequest() throws {
     let signer = try StarknetSigner(privateKey: testPrivateKey)
-    let addr = try OpenZeppelinAccount().computeAddress(publicKey: signer.publicKeyFelt!, salt: signer.publicKeyFelt!)
+    let addr = try OpenZeppelinAccount().computeAddress(
+      publicKey: signer.publicKeyFelt!, salt: signer.publicKeyFelt!)
     let account = StarknetAccount(signer: signer, address: addr, chain: sepolia)
 
     let deployTx = StarknetDeployAccountV3(
@@ -380,7 +382,8 @@ struct SNIP12IntegrationTests {
       "contents": .felt(Felt.fromShortString("Hello Bob")),
     ]
 
-    let typedData = SNIP12TypedData(types: types, primaryType: "Mail", domain: domain, message: message)
+    let typedData = SNIP12TypedData(
+      types: types, primaryType: "Mail", domain: domain, message: message)
     let hash = try typedData.messageHash(accountAddress: Felt(addr.data))
     #expect(hash != .zero)
 
@@ -415,7 +418,8 @@ struct SNIP12IntegrationTests {
       "recipient": .contractAddress(Felt(0xCAFE)),
     ]
 
-    let typedData = SNIP12TypedData(types: types, primaryType: "Order", domain: domain, message: message)
+    let typedData = SNIP12TypedData(
+      types: types, primaryType: "Order", domain: domain, message: message)
     let hash = try typedData.messageHash(accountAddress: Felt(addr.data))
     #expect(hash != .zero)
 
@@ -433,12 +437,13 @@ struct SNIP12IntegrationTests {
         SNIP12Type(name: "chainId", type: "felt"),
       ],
       "Simple": [
-        SNIP12Type(name: "value", type: "felt"),
+        SNIP12Type(name: "value", type: "felt")
       ],
     ]
     let domain = SNIP12Domain(name: "Test", version: "1", chainId: "1", revision: .v0)
     let message: [String: SNIP12Value] = ["value": .felt(Felt(42))]
-    let typedData = SNIP12TypedData(types: types, primaryType: "Simple", domain: domain, message: message)
+    let typedData = SNIP12TypedData(
+      types: types, primaryType: "Simple", domain: domain, message: message)
 
     let hash1 = try typedData.messageHash(accountAddress: Felt(0xAAA))
     let hash2 = try typedData.messageHash(accountAddress: Felt(0xBBB))
@@ -487,7 +492,9 @@ struct ReceiptIntegrationTests {
     #expect(!receipt.isPending)
     #expect(receipt.events.count == 1)
     #expect(receipt.events[0].data.count == 3)
-    #expect(receipt.transactionHashFelt == Felt("0x06a09ffbf590de3e2b30fca4f4f2b0e48f0e0d183e6e22f9cbaa0164f7e8c30a")!)
+    #expect(
+      receipt.transactionHashFelt == Felt(
+        "0x06a09ffbf590de3e2b30fca4f4f2b0e48f0e0d183e6e22f9cbaa0164f7e8c30a")!)
     #expect(receipt.blockNumber == 123456)
     #expect(receipt.executionResources.steps == 1234)
   }

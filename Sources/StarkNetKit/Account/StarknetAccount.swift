@@ -22,7 +22,10 @@ public struct StarknetAccount: SignableAccount, Sendable {
   public let provider: StarknetProvider?
 
   /// Create an account from a signer and a known deployed address.
-  public init(signer: StarknetSigner, address: StarknetAddress, chain: Starknet, provider: StarknetProvider? = nil) {
+  public init(
+    signer: StarknetSigner, address: StarknetAddress, chain: Starknet,
+    provider: StarknetProvider? = nil
+  ) {
     self.signer = signer
     self.address = address
     self.chain = chain

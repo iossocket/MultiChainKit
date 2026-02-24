@@ -17,13 +17,14 @@ final class ABIEventTests: XCTestCase {
       inputs: [
         ABIParameter(name: "from", type: "address", indexed: true),
         ABIParameter(name: "to", type: "address", indexed: true),
-        ABIParameter(name: "value", type: "uint256", indexed: false)
+        ABIParameter(name: "value", type: "uint256", indexed: false),
       ],
       anonymous: false
     )
 
     // keccak256("Transfer(address,address,uint256)")
-    let expectedTopic = Data(hex: "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")
+    let expectedTopic = Data(
+      hex: "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")
     XCTAssertEqual(event.topic, expectedTopic)
   }
 
@@ -33,13 +34,14 @@ final class ABIEventTests: XCTestCase {
       inputs: [
         ABIParameter(name: "owner", type: "address", indexed: true),
         ABIParameter(name: "spender", type: "address", indexed: true),
-        ABIParameter(name: "value", type: "uint256", indexed: false)
+        ABIParameter(name: "value", type: "uint256", indexed: false),
       ],
       anonymous: false
     )
 
     // keccak256("Approval(address,address,uint256)")
-    let expectedTopic = Data(hex: "8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925")
+    let expectedTopic = Data(
+      hex: "8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925")
     XCTAssertEqual(event.topic, expectedTopic)
   }
 
@@ -49,7 +51,7 @@ final class ABIEventTests: XCTestCase {
       inputs: [
         ABIParameter(name: "from", type: "address", indexed: true),
         ABIParameter(name: "to", type: "address", indexed: true),
-        ABIParameter(name: "value", type: "uint256", indexed: false)
+        ABIParameter(name: "value", type: "uint256", indexed: false),
       ],
       anonymous: false
     )
@@ -90,7 +92,7 @@ final class ABIEventTests: XCTestCase {
       inputs: [
         ABIParameter(name: "from", type: "address", indexed: true),
         ABIParameter(name: "to", type: "address", indexed: true),
-        ABIParameter(name: "value", type: "uint256", indexed: false)
+        ABIParameter(name: "value", type: "uint256", indexed: false),
       ],
       anonymous: false
     )
@@ -120,7 +122,7 @@ final class ABIEventTests: XCTestCase {
       inputs: [
         ABIParameter(name: "from", type: "address", indexed: true),
         ABIParameter(name: "to", type: "address", indexed: true),
-        ABIParameter(name: "value", type: "uint256", indexed: false)
+        ABIParameter(name: "value", type: "uint256", indexed: false),
       ],
       anonymous: false
     )
@@ -144,7 +146,7 @@ final class ABIEventTests: XCTestCase {
       inputs: [
         ABIParameter(name: "from", type: "address", indexed: true),
         ABIParameter(name: "to", type: "address", indexed: true),
-        ABIParameter(name: "value", type: "uint256", indexed: false)
+        ABIParameter(name: "value", type: "uint256", indexed: false),
       ],
       anonymous: false
     )
@@ -187,7 +189,7 @@ final class ABIEventTests: XCTestCase {
       inputs: [
         ABIParameter(name: "owner", type: "address", indexed: true),
         ABIParameter(name: "spender", type: "address", indexed: true),
-        ABIParameter(name: "value", type: "uint256", indexed: false)
+        ABIParameter(name: "value", type: "uint256", indexed: false),
       ],
       anonymous: false
     )
@@ -217,7 +219,7 @@ final class ABIEventTests: XCTestCase {
       name: "Message",
       inputs: [
         ABIParameter(name: "sender", type: "address", indexed: true),
-        ABIParameter(name: "message", type: "string", indexed: false)
+        ABIParameter(name: "message", type: "string", indexed: false),
       ],
       anonymous: false
     )
@@ -226,10 +228,11 @@ final class ABIEventTests: XCTestCase {
     let topic1 = Data(hex: "000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266")
 
     // ABI encoded string "Hello"
-    let logData = Data(hex:
-      "0000000000000000000000000000000000000000000000000000000000000020" +  // offset
-      "0000000000000000000000000000000000000000000000000000000000000005" +  // length
-      "48656c6c6f000000000000000000000000000000000000000000000000000000"    // "Hello"
+    let logData = Data(
+      hex:
+        "0000000000000000000000000000000000000000000000000000000000000020"  // offset
+        + "0000000000000000000000000000000000000000000000000000000000000005"  // length
+        + "48656c6c6f000000000000000000000000000000000000000000000000000000"  // "Hello"
     )
 
     let decoded = try event.decodeLog(topics: [topic0, topic1], data: logData)
@@ -251,7 +254,7 @@ final class ABIEventTests: XCTestCase {
       inputs: [
         ABIParameter(name: "from", type: "address", indexed: true),
         ABIParameter(name: "to", type: "address", indexed: true),
-        ABIParameter(name: "value", type: "uint256", indexed: false)
+        ABIParameter(name: "value", type: "uint256", indexed: false),
       ],
       anonymous: false
     )
@@ -261,7 +264,7 @@ final class ABIEventTests: XCTestCase {
       topics: [
         "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
         "0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266",
-        "0x00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8"
+        "0x00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8",
       ],
       data: "0x0000000000000000000000000000000000000000000000000000000005f5e100",  // 100000000 (100 USDC)
       blockNumber: "0x100",
@@ -291,7 +294,7 @@ final class ABIEventTests: XCTestCase {
       inputs: [
         ABIParameter(name: "from", type: "address", indexed: true),
         ABIParameter(name: "to", type: "address", indexed: true),
-        ABIParameter(name: "value", type: "uint256", indexed: false)
+        ABIParameter(name: "value", type: "uint256", indexed: false),
       ],
       anonymous: true
     )
@@ -314,7 +317,7 @@ final class ABIEventTests: XCTestCase {
       name: "HashStored",
       inputs: [
         ABIParameter(name: "hash", type: "bytes32", indexed: true),
-        ABIParameter(name: "sender", type: "address", indexed: true)
+        ABIParameter(name: "sender", type: "address", indexed: true),
       ],
       anonymous: false
     )

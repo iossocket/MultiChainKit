@@ -152,7 +152,9 @@ extension JsonRpcProvider {
     return try parseJsonRpcResponse(data)
   }
 
-  public func send<R: Decodable>(requests: [ChainRequest]) async throws -> [Swift.Result<R, ProviderError>] {
+  public func send<R: Decodable>(requests: [ChainRequest]) async throws -> [Swift.Result<
+    R, ProviderError
+  >] {
     guard !requests.isEmpty else {
       throw ProviderError.emptyBatchRequest
     }

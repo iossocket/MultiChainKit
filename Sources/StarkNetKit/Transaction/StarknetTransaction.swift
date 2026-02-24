@@ -105,7 +105,8 @@ public struct StarknetInvokeV3: Sendable, Equatable, Codable {
     let encodedBounds = StarknetTransactionHashUtil.encodeResourceBounds(resourceBounds)
     let feeFieldHash = try Poseidon.hashMany([Felt(tip)] + encodedBounds)
     let paymasterHash = try Poseidon.hashMany(paymasterData)
-    let daModes = StarknetTransactionHashUtil.encodeDAModes(feeDAMode: feeDAMode, nonceDAMode: nonceDAMode)
+    let daModes = StarknetTransactionHashUtil.encodeDAModes(
+      feeDAMode: feeDAMode, nonceDAMode: nonceDAMode)
     let accountDeployHash = try Poseidon.hashMany(accountDeploymentData)
     let calldataHash = try Poseidon.hashMany(calldata)
     return try Poseidon.hashMany([
@@ -155,7 +156,8 @@ public struct StarknetDeployAccountV1: Sendable, Equatable, Codable {
   /// hash = pedersen_on([deploy_account, 1, contractAddress, 0, pedersen_on([classHash, salt, ...calldata]), maxFee, chainId, nonce])
   public func transactionHash() throws -> Felt {
     let address = try contractAddress()
-    let calldataHash = try Pedersen.hashMany([classHash, contractAddressSalt] + constructorCalldata)
+    let calldataHash = try Pedersen.hashMany(
+      [classHash, contractAddressSalt] + constructorCalldata)
     return try Pedersen.hashMany([
       deployAccountPrefix, Felt(1), address, .zero, calldataHash, maxFee, chainId, nonce,
     ])
@@ -217,7 +219,8 @@ public struct StarknetDeployAccountV3: Sendable, Equatable, Codable {
     let encodedBounds = StarknetTransactionHashUtil.encodeResourceBounds(resourceBounds)
     let feeFieldHash = try Poseidon.hashMany([Felt(tip)] + encodedBounds)
     let paymasterHash = try Poseidon.hashMany(paymasterData)
-    let daModes = StarknetTransactionHashUtil.encodeDAModes(feeDAMode: feeDAMode, nonceDAMode: nonceDAMode)
+    let daModes = StarknetTransactionHashUtil.encodeDAModes(
+      feeDAMode: feeDAMode, nonceDAMode: nonceDAMode)
     let calldataHash = try Poseidon.hashMany(constructorCalldata)
     return try Poseidon.hashMany([
       deployAccountPrefix, Felt(3), address, feeFieldHash, paymasterHash,
@@ -240,7 +243,9 @@ public enum StarknetContractAddress {
     deployerAddress: Felt = .zero
   ) throws -> Felt {
     let calldataHash = try Pedersen.hashMany(calldata)
-    let fullHash = try Pedersen.hashMany([contractAddressPrefix, deployerAddress, salt, classHash, calldataHash])
+    let fullHash = try Pedersen.hashMany([
+      contractAddressPrefix, deployerAddress, salt, classHash, calldataHash,
+    ])
     let mask = BigUInt(1) << 251
     return Felt(fullHash.bigUIntValue % mask)
   }
@@ -253,7 +258,8 @@ public enum StarknetTransactionHashUtil {
   /// Each: prefix << 192 | maxAmount << 128 | maxPricePerUnit
   public static func encodeResourceBounds(_ bounds: StarknetResourceBoundsMapping) -> [Felt] {
     func encode(prefix: Felt, bound: StarknetResourceBounds) -> Felt {
-      let value = (prefix.bigUIntValue << 192)
+      let value =
+        (prefix.bigUIntValue << 192)
         + (BigUInt(bound.maxAmount) << 128)
         + bound.maxPricePerUnit
       return Felt(value)

@@ -39,11 +39,15 @@ public final class StarknetProvider: JsonRpcProvider, Sendable {
 
   // MARK: - Account State
 
-  public func getNonceRequest(address: StarknetAddress, block: StarknetBlockId = .latest) -> ChainRequest {
+  public func getNonceRequest(address: StarknetAddress, block: StarknetBlockId = .latest)
+    -> ChainRequest
+  {
     ChainRequest(method: "starknet_getNonce", params: [block, address.checksummed])
   }
 
-  public func getClassHashAtRequest(address: StarknetAddress, block: StarknetBlockId = .latest) -> ChainRequest {
+  public func getClassHashAtRequest(address: StarknetAddress, block: StarknetBlockId = .latest)
+    -> ChainRequest
+  {
     ChainRequest(method: "starknet_getClassHashAt", params: [block, address.checksummed])
   }
 
@@ -86,12 +90,14 @@ public final class StarknetProvider: JsonRpcProvider, Sendable {
     return ChainRequest(method: "starknet_addInvokeTransaction", params: [tx])
   }
 
-  public func addDeployAccountTransactionRequest(deployV1: StarknetDeployAccountV1) -> ChainRequest {
+  public func addDeployAccountTransactionRequest(deployV1: StarknetDeployAccountV1) -> ChainRequest
+  {
     let tx = StarknetDeployAccountV1Param(tx: deployV1)
     return ChainRequest(method: "starknet_addDeployAccountTransaction", params: [tx])
   }
 
-  public func addDeployAccountTransactionRequest(deployV3: StarknetDeployAccountV3) -> ChainRequest {
+  public func addDeployAccountTransactionRequest(deployV3: StarknetDeployAccountV3) -> ChainRequest
+  {
     let tx = StarknetDeployAccountV3Param(tx: deployV3)
     return ChainRequest(method: "starknet_addDeployAccountTransaction", params: [tx])
   }
@@ -143,7 +149,8 @@ public final class StarknetProvider: JsonRpcProvider, Sendable {
         throw ChainError.transactionFailed(reason: "REJECTED", txHash: hash.hexString)
       }
       if status.isReverted {
-        throw ChainError.transactionFailed(reason: status.failureReason ?? "REVERTED", txHash: hash.hexString)
+        throw ChainError.transactionFailed(
+          reason: status.failureReason ?? "REVERTED", txHash: hash.hexString)
       }
       if status.isAccepted {
         return try await send(request: getTransactionReceiptRequest(hash: hash))

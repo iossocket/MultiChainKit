@@ -156,10 +156,12 @@ struct SNIP12V0Tests {
     ])
     let encoded = try SNIP12.encodeValue(person, type: "Person", types: v0Types, revision: .v0)
     // Should be structHash("Person", data)
-    let expected = try SNIP12.structHash("Person", data: [
-      "name": .felt(Felt.fromShortString("Cow")),
-      "wallet": .felt(Felt("0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826")!),
-    ], types: v0Types, revision: .v0)
+    let expected = try SNIP12.structHash(
+      "Person",
+      data: [
+        "name": .felt(Felt.fromShortString("Cow")),
+        "wallet": .felt(Felt("0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826")!),
+      ], types: v0Types, revision: .v0)
     #expect(encoded == expected)
   }
 
@@ -215,7 +217,10 @@ struct SNIP12V1Tests {
   @Test("encodeType v1 uses double-quote escaping")
   func encodeTypeV1() {
     let encoded = SNIP12.encodeType("StarknetDomain", types: v1Types, revision: .v1)
-    #expect(encoded == "\"StarknetDomain\"(\"name\":\"shortstring\",\"version\":\"shortstring\",\"chainId\":\"shortstring\",\"revision\":\"shortstring\")")
+    #expect(
+      encoded
+        == "\"StarknetDomain\"(\"name\":\"shortstring\",\"version\":\"shortstring\",\"chainId\":\"shortstring\",\"revision\":\"shortstring\")"
+    )
   }
 
   @Test("encodeType v1 for Example")
@@ -313,7 +318,8 @@ struct SNIP12ErrorTests {
   @Test("missingField when field not in data")
   func missingField() throws {
     do {
-      _ = try SNIP12.structHash("Person", data: ["name": .felt(Felt(1))], types: v0Types, revision: .v0)
+      _ = try SNIP12.structHash(
+        "Person", data: ["name": .felt(Felt(1))], types: v0Types, revision: .v0)
       Issue.record("Expected missingField error")
     } catch let error as SNIP12Error {
       #expect(error == .missingField("wallet"))

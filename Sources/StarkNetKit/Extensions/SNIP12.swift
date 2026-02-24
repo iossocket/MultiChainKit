@@ -134,7 +134,8 @@ public struct SNIP12TypedData: Sendable, Equatable {
   public func messageHash(accountAddress: Felt) throws -> Felt {
     let prefix = Felt.fromShortString("StarkNet Message")
     let domainSep = try domain.separator(types: types)
-    let msgHash = try SNIP12.structHash(primaryType, data: message, types: types, revision: domain.revision)
+    let msgHash = try SNIP12.structHash(
+      primaryType, data: message, types: types, revision: domain.revision)
 
     switch domain.revision {
     case .v0:
@@ -233,7 +234,9 @@ public enum SNIP12 {
         throw SNIP12Error.typeMismatch(expected: type, got: "non-array")
       }
       let elementType = String(type.dropLast())
-      let encoded = try elements.map { try encodeValue($0, type: elementType, types: types, revision: revision) }
+      let encoded = try elements.map {
+        try encodeValue($0, type: elementType, types: types, revision: revision)
+      }
       switch revision {
       case .v0:
         return try Pedersen.hashMany(encoded)
@@ -319,7 +322,9 @@ public enum SNIP12 {
   }
 
   /// Encode a single type definition string.
-  private static func encodeSingleType(_ name: String, fields: [SNIP12Type], revision: SNIP12Revision) -> String {
+  private static func encodeSingleType(
+    _ name: String, fields: [SNIP12Type], revision: SNIP12Revision
+  ) -> String {
     let fieldStrings = fields.map { field in
       switch revision {
       case .v0:

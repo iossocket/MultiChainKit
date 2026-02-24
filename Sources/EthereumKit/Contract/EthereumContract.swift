@@ -160,7 +160,8 @@ public struct EthereumContract: Sendable {
 
   private func findEvent(name: String) throws -> ABIEvent {
     guard let item = abi.first(where: { $0.type == .event && $0.name == name }),
-          let event = item.asEvent() else {
+      let event = item.asEvent()
+    else {
       throw ContractError.eventNotFound(name)
     }
     return event
@@ -212,7 +213,7 @@ public struct EthereumContract: Sendable {
       "address": address.checksummed,
       "fromBlock": fromBlock.rawValue,
       "toBlock": toBlock.rawValue,
-      "topics": topicsArray
+      "topics": topicsArray,
     ]
 
     return ChainRequest(method: "eth_getLogs", params: [AnyEncodableDict(filter)])

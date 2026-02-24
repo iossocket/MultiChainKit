@@ -100,7 +100,7 @@ final class ABIValueTests: XCTestCase {
     let tuple = ABIValue.tuple([
       .address(addr),
       .uint256(Wei.fromEther(1)),
-      .bool(true)
+      .bool(true),
     ])
 
     if case .tuple(let elements) = tuple {
@@ -303,7 +303,8 @@ final class ABIValueTests: XCTestCase {
     // Static types
     XCTAssertFalse(ABIValue.uint256(Wei(1)).isDynamic)
     XCTAssertFalse(ABIValue.bool(true).isDynamic)
-    XCTAssertFalse(ABIValue.address(EthereumAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")!).isDynamic)
+    XCTAssertFalse(
+      ABIValue.address(EthereumAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")!).isDynamic)
     XCTAssertFalse(ABIValue.bytes32(Data(repeating: 0, count: 32)).isDynamic)
 
     // Dynamic types
@@ -331,7 +332,7 @@ final class ABIValueTests: XCTestCase {
     let arr = ABIValue.fixedArray([
       .uint256(Wei(1)),
       .uint256(Wei(2)),
-      .uint256(Wei(3))
+      .uint256(Wei(3)),
     ])
     let encoded = arr.encode()
 
@@ -348,7 +349,7 @@ final class ABIValueTests: XCTestCase {
     // uint256[] with values [1, 2]
     let arr = ABIValue.array([
       .uint256(Wei(1)),
-      .uint256(Wei(2))
+      .uint256(Wei(2)),
     ])
     let encoded = arr.encode()
 
@@ -371,7 +372,7 @@ final class ABIValueTests: XCTestCase {
     let tuple = ABIValue.tuple([
       .address(addr),
       .uint256(Wei(100)),
-      .bool(true)
+      .bool(true),
     ])
     let encoded = tuple.encode()
 
@@ -392,7 +393,7 @@ final class ABIValueTests: XCTestCase {
     // (uint256, string) - has dynamic element
     let tuple = ABIValue.tuple([
       .uint256(Wei(42)),
-      .string("Hello")
+      .string("Hello"),
     ])
     let encoded = tuple.encode()
 

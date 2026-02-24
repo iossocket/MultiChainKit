@@ -4,6 +4,7 @@
 //
 
 import XCTest
+
 @testable import MultiChainCore
 
 // MARK: - Test Chain
@@ -86,7 +87,8 @@ final class MockProviderTests: XCTestCase {
       XCTFail("Expected error")
     } catch {
       XCTAssertTrue(error is ProviderError)
-      if case ProviderError.timeout = error {} else {
+      if case ProviderError.timeout = error {
+      } else {
         XCTFail("Expected timeout, got \(error)")
       }
     }
@@ -124,10 +126,14 @@ final class MockProviderTests: XCTestCase {
     XCTAssertEqual(results.count, 2)
     if case .success(let v) = results[0] {
       XCTAssertEqual(v, "0xaaa")
-    } else { XCTFail("Expected success") }
+    } else {
+      XCTFail("Expected success")
+    }
     if case .failure(let e) = results[1] {
       XCTAssertEqual(e.description, "RPC error -1: fail")
-    } else { XCTFail("Expected failure") }
+    } else {
+      XCTFail("Expected failure")
+    }
   }
 
   func testReset() async throws {

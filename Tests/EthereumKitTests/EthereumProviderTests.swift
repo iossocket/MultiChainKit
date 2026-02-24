@@ -217,7 +217,7 @@ final class EthereumProviderMockTests: XCTestCase {
     let provider = EthereumProvider(chain: .mainnet)
 
     // Provider protocol
-    let _: Ethereum = provider.chain
+    let _: EvmChain = provider.chain
   }
 
   func testSendBlockNumber() async throws {

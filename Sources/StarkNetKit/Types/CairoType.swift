@@ -151,11 +151,15 @@ extension CairoType {
     var parenDepth = 0
 
     for char in s {
-      if char == "<" { angleDepth += 1 }
-      else if char == ">" { angleDepth -= 1 }
-      else if char == "(" { parenDepth += 1 }
-      else if char == ")" { parenDepth -= 1 }
-      else if char == "," && angleDepth == 0 && parenDepth == 0 {
+      if char == "<" {
+        angleDepth += 1
+      } else if char == ">" {
+        angleDepth -= 1
+      } else if char == "(" {
+        parenDepth += 1
+      } else if char == ")" {
+        parenDepth -= 1
+      } else if char == "," && angleDepth == 0 && parenDepth == 0 {
         components.append(current.trimmingCharacters(in: .whitespaces))
         current = ""
         continue

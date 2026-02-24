@@ -361,7 +361,7 @@ final class TransactionTypesTests: XCTestCase {
 
     // Sepolia (chainId = 11155111)
     var txSepolia = EthereumTransaction.legacy(
-      chainId: 11155111,
+      chainId: 11_155_111,
       nonce: 0,
       gasPrice: Wei.fromGwei(20),
       gasLimit: 21000,

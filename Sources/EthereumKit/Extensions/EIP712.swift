@@ -208,7 +208,8 @@ public enum EIP712 {
 
   // MARK: - Private Helpers
 
-  private static func encodeTypeSingle(_ typeName: String, types: [String: [EIP712Type]]) -> String {
+  private static func encodeTypeSingle(_ typeName: String, types: [String: [EIP712Type]]) -> String
+  {
     guard let fields = types[typeName] else { return "" }
     let params = fields.map { "\($0.type) \($0.name)" }.joined(separator: ",")
     return "\(typeName)(\(params))"
@@ -230,7 +231,9 @@ public enum EIP712 {
     }
   }
 
-  private static func findReferencedTypes(_ typeName: String, types: [String: [EIP712Type]]) -> Set<String> {
+  private static func findReferencedTypes(_ typeName: String, types: [String: [EIP712Type]]) -> Set<
+    String
+  > {
     var found = Set<String>()
     findReferencedTypes(typeName, types: types, found: &found)
     return found

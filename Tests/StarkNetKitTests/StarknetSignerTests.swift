@@ -12,8 +12,10 @@ import Testing
 @testable import StarknetKit
 
 // Known test vectors from starknet.swift
-private let testPrivateKey = Felt("0x4070e7abfa479cf8a30d38895e93800a88862c4a65aa00e2b11495998818046")!
-private let testPublicKey = Felt("0x7697f8f9a4c3e2b1efd882294462fda2ca9c439d02a3a04cf0a0cdb627f11ee")!
+private let testPrivateKey = Felt(
+  "0x4070e7abfa479cf8a30d38895e93800a88862c4a65aa00e2b11495998818046")!
+private let testPublicKey = Felt(
+  "0x7697f8f9a4c3e2b1efd882294462fda2ca9c439d02a3a04cf0a0cdb627f11ee")!
 
 @Suite("Felt ShortString Tests")
 struct FeltShortStringTests {
@@ -185,7 +187,8 @@ struct StarknetSignerTests {
   @Test("sign(hash:) accepts 32-byte Data")
   func signHashData() throws {
     let signer = try StarknetSigner(privateKey: testPrivateKey)
-    let hashData = Felt("0x06fea80189363a786037ed3e7ba546dad0ef7de49fccae0e31eb658b7dd4ea76")!.bigEndianData
+    let hashData = Felt("0x06fea80189363a786037ed3e7ba546dad0ef7de49fccae0e31eb658b7dd4ea76")!
+      .bigEndianData
 
     let signature = try signer.sign(hash: hashData)
     #expect(signature.r != .zero)

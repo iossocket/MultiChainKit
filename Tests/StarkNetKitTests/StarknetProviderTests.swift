@@ -248,8 +248,9 @@ struct RpcParamSerializationTests {
 
 /// Integration tests against local starknet-devnet (started with `starknet-devnet --seed 0`).
 /// These tests are skipped on CI or if devnet is not running.
-@Suite("StarknetProvider Devnet Integration",
-       .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil))
+@Suite(
+  "StarknetProvider Devnet Integration",
+  .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil))
 struct StarknetProviderDevnetTests {
 
   let provider: StarknetProvider = {
@@ -260,7 +261,8 @@ struct StarknetProviderDevnetTests {
   }()
 
   // Predeployed account #0 from `starknet-devnet --seed 0`
-  let account0Address = StarknetAddress("0x064b48806902a367c8598f4f95c305e8c1a1acba5f082d294a43793113115691")!
+  let account0Address = StarknetAddress(
+    "0x064b48806902a367c8598f4f95c305e8c1a1acba5f082d294a43793113115691")!
   let account0PrivateKey = Felt("0x71d7bb07b9a64f6f78ac4c816aff4da9")!
 
   /// Check if devnet is reachable; skip test if not.
@@ -338,9 +340,10 @@ struct StarknetInvokeTransactionResponseTests {
   @Test("decode from JSON")
   func decodeFromJson() throws {
     let json = """
-    {"transaction_hash":"0xabc123"}
-    """
-    let response = try JSONDecoder().decode(StarknetInvokeTransactionResponse.self, from: json.data(using: .utf8)!)
+      {"transaction_hash":"0xabc123"}
+      """
+    let response = try JSONDecoder().decode(
+      StarknetInvokeTransactionResponse.self, from: json.data(using: .utf8)!)
     #expect(response.transactionHash == "0xabc123")
     #expect(response.transactionHashFelt == Felt("0xabc123")!)
   }
@@ -348,10 +351,12 @@ struct StarknetInvokeTransactionResponseTests {
   @Test("equatable")
   func equatable() throws {
     let json = """
-    {"transaction_hash":"0x1"}
-    """
-    let a = try JSONDecoder().decode(StarknetInvokeTransactionResponse.self, from: json.data(using: .utf8)!)
-    let b = try JSONDecoder().decode(StarknetInvokeTransactionResponse.self, from: json.data(using: .utf8)!)
+      {"transaction_hash":"0x1"}
+      """
+    let a = try JSONDecoder().decode(
+      StarknetInvokeTransactionResponse.self, from: json.data(using: .utf8)!)
+    let b = try JSONDecoder().decode(
+      StarknetInvokeTransactionResponse.self, from: json.data(using: .utf8)!)
     #expect(a == b)
   }
 }

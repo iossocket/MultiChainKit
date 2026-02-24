@@ -136,7 +136,7 @@ struct CairoValueIntegerTests {
 
   @Test("u32 encodes as single felt")
   func u32Encode() {
-    #expect(CairoValue.u32(0xDEADBEEF).encode() == [Felt(UInt64(0xDEADBEEF))])
+    #expect(CairoValue.u32(0xDEAD_BEEF).encode() == [Felt(UInt64(0xDEAD_BEEF))])
   }
 
   @Test("u32 decodes")
@@ -200,7 +200,7 @@ struct CairoValueU256Tests {
     let encoded = v.encode()
     #expect(encoded.count == 2)
     #expect(encoded[0] == Felt(100))  // low
-    #expect(encoded[1] == .zero)      // high
+    #expect(encoded[1] == .zero)  // high
   }
 
   @Test("u256 large value splits correctly")
@@ -223,7 +223,8 @@ struct CairoValueU256Tests {
 
   @Test("u256 roundtrip with large value")
   func roundtrip() throws {
-    let big = BigUInt("115792089237316195423570985008687907853269984665640564039457584007913129639935")  // 2^256 - 1
+    let big = BigUInt(
+      "115792089237316195423570985008687907853269984665640564039457584007913129639935")  // 2^256 - 1
     let original = CairoValue.u256(big)
     let encoded = original.encode()
     let (decoded, _) = try CairoValue.decode(type: .u256, from: encoded, at: 0)
@@ -261,7 +262,8 @@ struct CairoValueContractAddressTests {
 
   @Test("contractAddress decodes")
   func decode() throws {
-    let (value, consumed) = try CairoValue.decode(type: .contractAddress, from: [Felt(0x123)], at: 0)
+    let (value, consumed) = try CairoValue.decode(
+      type: .contractAddress, from: [Felt(0x123)], at: 0)
     #expect(value == .contractAddress(Felt(0x123)))
     #expect(consumed == 1)
   }
@@ -278,7 +280,7 @@ struct CairoValueByteArrayTests {
     let encoded = CairoValue.byteArray(ba).encode()
     // [0 full words, pending_word, 5]
     #expect(encoded.count == 3)
-    #expect(encoded[0] == .zero)    // num_full_words = 0
+    #expect(encoded[0] == .zero)  // num_full_words = 0
     #expect(encoded[2] == Felt(5))  // pending_word_len = 5
   }
 
@@ -296,7 +298,7 @@ struct CairoValueByteArrayTests {
     // [1, word0, pending_word=0, pending_len=0]
     #expect(encoded.count == 4)
     #expect(encoded[0] == Felt(1))  // 1 full word
-    #expect(encoded[3] == .zero)    // pending_word_len = 0
+    #expect(encoded[3] == .zero)  // pending_word_len = 0
   }
 
   @Test("32 bytes = 1 full word + 1 pending byte")
@@ -335,7 +337,8 @@ struct CairoValueByteArrayTests {
 
   @Test("Long string roundtrip")
   func longStringRoundtrip() throws {
-    let original = "The quick brown fox jumps over the lazy dog. This is a longer string for testing."
+    let original =
+      "The quick brown fox jumps over the lazy dog. This is a longer string for testing."
     let ba = CairoByteArray(string: original)
     let encoded = CairoValue.byteArray(ba).encode()
     let (decoded, _) = try CairoValue.decode(type: .byteArray, from: encoded, at: 0)
@@ -363,7 +366,7 @@ struct CairoValueOptionTests {
     let v = CairoValue.some(.felt252(Felt(42)))
     let encoded = v.encode()
     #expect(encoded.count == 2)
-    #expect(encoded[0] == .zero)    // variant 0 = Some
+    #expect(encoded[0] == .zero)  // variant 0 = Some
     #expect(encoded[1] == Felt(42))
   }
 

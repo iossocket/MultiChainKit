@@ -112,7 +112,8 @@ struct StarknetAccountTests {
   @Test("Build InvokeV1 from calls")
   func buildInvokeV1() throws {
     let account = try makeAccount()
-    let call = StarknetCall(contractAddress: Felt(0x1), entryPointSelector: Felt(0x2), calldata: [Felt(100)])
+    let call = StarknetCall(
+      contractAddress: Felt(0x1), entryPointSelector: Felt(0x2), calldata: [Felt(100)])
     let tx = account.buildInvokeV1(calls: [call], maxFee: Felt(1000), nonce: Felt(5))
 
     #expect(tx.senderAddress == account.addressFelt)
@@ -163,7 +164,8 @@ struct StarknetAccountTests {
   @Test("Sign InvokeV1 signature is verifiable")
   func signInvokeV1Verifiable() throws {
     let account = try makeAccount()
-    let call = StarknetCall(contractAddress: Felt(0x1), entryPointSelector: Felt(0x2), calldata: [Felt(42)])
+    let call = StarknetCall(
+      contractAddress: Felt(0x1), entryPointSelector: Felt(0x2), calldata: [Felt(42)])
     let unsigned = account.buildInvokeV1(calls: [call], maxFee: Felt(100), nonce: Felt(1))
     let signed = try account.signInvokeV1(unsigned)
 
@@ -195,7 +197,8 @@ struct StarknetAccountTests {
   @Test("Sign DeployAccountV1 is verifiable")
   func signDeployAccountV1() throws {
     let signer = try makeSigner()
-    let account = StarknetAccount(signer: signer, address: StarknetAddress("0xabc")!, chain: .sepolia)
+    let account = StarknetAccount(
+      signer: signer, address: StarknetAddress("0xabc")!, chain: .sepolia)
 
     let tx = StarknetDeployAccountV1(
       classHash: Felt(0x111), contractAddressSalt: Felt(0x222),
@@ -276,7 +279,8 @@ struct StarknetAccountTests {
   @Test("sign(transaction:) signs InvokeV3 via protocol method")
   func signTransactionInvokeV3() throws {
     let account = try makeAccount()
-    let call = StarknetCall(contractAddress: Felt(0x1), entryPointSelector: Felt(0x2), calldata: [Felt(99)])
+    let call = StarknetCall(
+      contractAddress: Felt(0x1), entryPointSelector: Felt(0x2), calldata: [Felt(99)])
     let inner = account.buildInvokeV3(calls: [call], resourceBounds: .zero, nonce: Felt(0))
     var tx = StarknetTransaction.invokeV3(inner)
 
@@ -321,7 +325,7 @@ struct StarknetAccountTests {
   @Test("signMessage signs arbitrary data")
   func signMessageData() throws {
     let account = try makeAccount()
-    let message = Felt(0xdeadbeef).bigEndianData
+    let message = Felt(0xdead_beef).bigEndianData
     let sig = try account.signMessage(message)
 
     let valid = try StarkCurve.verify(

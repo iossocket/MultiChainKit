@@ -11,9 +11,9 @@ import MultiChainCore
 // MARK: - TransactionType
 
 public enum TransactionType: UInt8, Sendable, Equatable {
-  case legacy = 0x00      // Type 0: Legacy transaction
+  case legacy = 0x00  // Type 0: Legacy transaction
   case accessList = 0x01  // Type 1: EIP-2930
-  case eip1559 = 0x02     // Type 2: EIP-1559
+  case eip1559 = 0x02  // Type 2: EIP-1559
 }
 
 // MARK: - AccessListEntry
@@ -31,7 +31,7 @@ public struct AccessListEntry: Sendable, Equatable, Codable {
 // MARK: - EthereumTransaction
 
 public struct EthereumTransaction: ChainTransaction, Sendable {
-  public typealias C = Ethereum
+  public typealias C = EvmChain
 
   // MARK: - Fields
 
@@ -348,7 +348,9 @@ extension EthereumTransaction: Codable {
     case type, chainId, nonce, gasPrice
     case maxPriorityFeePerGas, maxFeePerGas
     case gasLimit = "gas"
-    case to, value, data = "input", accessList
+    case to, value
+    case data = "input"
+    case accessList
   }
 
   public init(from decoder: Decoder) throws {
@@ -365,7 +367,8 @@ extension EthereumTransaction: Codable {
     self.chainId = try container.decode(UInt64.self, forKey: .chainId)
     self.nonce = try container.decode(UInt64.self, forKey: .nonce)
     self.gasPrice = try container.decodeIfPresent(Wei.self, forKey: .gasPrice)
-    self.maxPriorityFeePerGas = try container.decodeIfPresent(Wei.self, forKey: .maxPriorityFeePerGas)
+    self.maxPriorityFeePerGas = try container.decodeIfPresent(
+      Wei.self, forKey: .maxPriorityFeePerGas)
     self.maxFeePerGas = try container.decodeIfPresent(Wei.self, forKey: .maxFeePerGas)
     self.gasLimit = try container.decode(UInt64.self, forKey: .gasLimit)
     self.to = try container.decodeIfPresent(EthereumAddress.self, forKey: .to)
@@ -378,7 +381,8 @@ extension EthereumTransaction: Codable {
       self.data = Data()
     }
 
-    self.accessList = try container.decodeIfPresent([AccessListEntry].self, forKey: .accessList) ?? []
+    self.accessList =
+      try container.decodeIfPresent([AccessListEntry].self, forKey: .accessList) ?? []
     self.signature = nil
   }
 

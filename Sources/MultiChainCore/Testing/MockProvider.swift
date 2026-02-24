@@ -12,7 +12,7 @@ import Foundation
 /// Useful for unit testing without hitting real RPC endpoints.
 ///
 /// ```swift
-/// let mock = MockProvider<Ethereum>(chain: .sepolia)
+/// let mock = MockProvider<EvmChain>(chain: .sepolia)
 /// mock.enqueue("0x1234")           // next send() returns this
 /// mock.enqueueError(.timeout)      // next send() throws this
 /// let result: String = try await mock.send(request: someRequest)
@@ -39,7 +39,7 @@ public final class MockProvider<C: Chain>: Provider, @unchecked Sendable {
 
   /// Enqueue an error. Consumed FIFO by `send(request:)`.
   public func enqueueError(_ error: Error) {
-    responses.append(()) // placeholder
+    responses.append(())  // placeholder
     errors.append(error)
   }
 
@@ -73,7 +73,9 @@ public final class MockProvider<C: Chain>: Provider, @unchecked Sendable {
     return typed
   }
 
-  public func send<R: Decodable>(requests: [ChainRequest]) async throws -> [Result<R, ProviderError>] {
+  public func send<R: Decodable>(requests: [ChainRequest]) async throws -> [Result<
+    R, ProviderError
+  >] {
     for req in requests {
       sentRequests.append(req)
     }

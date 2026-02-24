@@ -137,15 +137,16 @@ struct StarknetContractInvokeTests {
   func methodExists() {
     let provider = StarknetProvider(chain: .sepolia)
     let abi: [StarknetABIItem] = [
-      .function(StarknetABIFunction(
-        name: "transfer",
-        inputs: [
-          StarknetABIParam(name: "recipient", type: "core::felt252"),
-          StarknetABIParam(name: "amount", type: "core::integer::u256"),
-        ],
-        outputs: [],
-        stateMutability: "external"
-      ))
+      .function(
+        StarknetABIFunction(
+          name: "transfer",
+          inputs: [
+            StarknetABIParam(name: "recipient", type: "core::felt252"),
+            StarknetABIParam(name: "amount", type: "core::integer::u256"),
+          ],
+          outputs: [],
+          stateMutability: "external"
+        ))
     ]
     let contract = StarknetContract(
       address: Felt(0x1),
