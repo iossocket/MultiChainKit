@@ -145,22 +145,6 @@ public final class EthereumProvider: JsonRpcProvider, @unchecked Sendable {
     throw ProviderError.timeout
   }
 
-  // MARK: - Optional Result
-
-  /// Wrapper for JSON-RPC results that may be null (e.g. pending receipt).
-  public struct OptionalResult<T: Decodable>: Decodable {
-    public let value: T?
-
-    public init(from decoder: Decoder) throws {
-      let container = try decoder.singleValueContainer()
-      if container.decodeNil() {
-        self.value = nil
-      } else {
-        self.value = try container.decode(T.self)
-      }
-    }
-  }
-
   // MARK: - Private
 
   private func transactionPreprocess(_ tx: EthereumTransaction) -> [String: String] {

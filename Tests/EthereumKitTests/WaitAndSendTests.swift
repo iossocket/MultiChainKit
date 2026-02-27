@@ -38,7 +38,7 @@ final class OptionalResultTests: XCTestCase {
       """
     let data = json.data(using: .utf8)!
     let response = try JSONDecoder().decode(
-      JsonRpcResponse<EthereumProvider.OptionalResult<EthereumReceipt>>.self, from: data)
+      JsonRpcResponse<OptionalResult<EthereumReceipt>>.self, from: data)
     XCTAssertNil(response.result?.value)
   }
 
@@ -48,7 +48,7 @@ final class OptionalResultTests: XCTestCase {
       """
     let data = json.data(using: .utf8)!
     let response = try JSONDecoder().decode(
-      JsonRpcResponse<EthereumProvider.OptionalResult<String>>.self, from: data)
+      JsonRpcResponse<OptionalResult<String>>.self, from: data)
     XCTAssertEqual(response.result?.value, "0xabc")
   }
 }

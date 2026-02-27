@@ -98,6 +98,19 @@ final class EthereumProviderTests: XCTestCase {
     }
   }
 
+  func testParseMissingResultAsOptionalResult() throws {
+    let provider = EthereumProvider(chain: .mainnet)
+    // Some nodes return {"jsonrpc":"2.0","id":1} when result is not ready (e.g. pending receipt)
+    let json = """
+      {"jsonrpc":"2.0","id":1}
+      """
+    let data = json.data(using: .utf8)!
+
+    let wrapper: OptionalResult<EthereumReceipt> = try provider.parseJsonRpcResponse(data)
+
+    XCTAssertNil(wrapper.value)
+  }
+
   // MARK: - Batch Request Building
 
   func testBuildBatchRequest() {

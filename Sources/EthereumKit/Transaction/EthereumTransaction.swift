@@ -30,7 +30,7 @@ public struct AccessListEntry: Sendable, Equatable, Codable {
 
 // MARK: - EthereumTransaction
 
-public struct EthereumTransaction: ChainTransaction, Sendable {
+public struct EthereumTransaction: ChainTransaction, Sendable, Equatable {
   public typealias C = EvmChain
 
   // MARK: - Fields

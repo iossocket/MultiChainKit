@@ -53,6 +53,20 @@ public enum ProviderError: Error, Sendable, CustomStringConvertible {
   }
 }
 
+/// Wrapper for JSON-RPC results that may be null (e.g. pending receipt).
+public struct OptionalResult<T: Decodable>: Decodable {
+  public let value: T?
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    if container.decodeNil() {
+      self.value = nil
+    } else {
+      self.value = try container.decode(T.self)
+    }
+  }
+}
+
 // MARK: - JSON-RPC
 
 public struct JsonRpcRequest: Encodable, Sendable {
@@ -208,9 +222,12 @@ extension JsonRpcProvider {
     if let error = response.error {
       throw ProviderError.rpcError(code: error.code, message: error.message)
     }
-    guard let result = response.result else {
-      throw ProviderError.invalidResponse
+    if let result = response.result {
+      return result
     }
-    return result
+    // Result key missing or null (e.g. pending receipt) — decode R from "null".
+    // OptionalResult decodes null as value: nil; other types will fail with decodingError.
+    let nullData = Data("null".utf8)
+    return try JSONDecoder().decode(R.self, from: nullData)
   }
 }
