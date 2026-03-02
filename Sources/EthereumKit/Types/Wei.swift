@@ -32,6 +32,9 @@ public struct Wei: ChainValue, Sendable {
 
   public var hexString: String { "0x" + String(value, radix: 16) }
 
+  /// Access the underlying BigUInt value
+  public var bigUIntValue: BigUInt { value }
+
   // MARK: - Unit Conversions
 
   public static func fromGwei(_ v: UInt64) -> Wei { Wei(BigUInt(v) * gwei) }

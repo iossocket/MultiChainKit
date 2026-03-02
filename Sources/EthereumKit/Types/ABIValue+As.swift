@@ -3,6 +3,7 @@
 //  EthereumKit
 //
 
+import BigInt
 import Foundation
 
 extension ABIValue {
@@ -11,11 +12,52 @@ extension ABIValue {
     switch self {
     case .uint(_, let wei):
       if T.self == Wei.self { return wei as? T }
-      if T.self == UInt64.self { return UInt64(wei.hexString.dropFirst(2), radix: 16) as? T }
+
+      // Convert to integer types with overflow checking
+      let bigUInt = wei.bigUIntValue
+
+      if T.self == BigUInt.self { return bigUInt as? T }
+
+      // Try to convert to UInt64 first
+      guard bigUInt.bitWidth <= 64, let uint64Value = UInt64(exactly: bigUInt) else {
+        return nil
+      }
+
+      if T.self == UInt64.self { return uint64Value as? T }
+      if T.self == UInt.self { return UInt(exactly: uint64Value) as? T }
+      if T.self == UInt32.self { return UInt32(exactly: uint64Value) as? T }
+      if T.self == UInt16.self { return UInt16(exactly: uint64Value) as? T }
+      if T.self == UInt8.self { return UInt8(exactly: uint64Value) as? T }
+      if T.self == Int.self { return Int(exactly: uint64Value) as? T }
+      if T.self == Int64.self { return Int64(exactly: uint64Value) as? T }
+      if T.self == Int32.self { return Int32(exactly: uint64Value) as? T }
+      if T.self == Int16.self { return Int16(exactly: uint64Value) as? T }
+      if T.self == Int8.self { return Int8(exactly: uint64Value) as? T }
       return nil
 
     case .int(_, let wei):
       if T.self == Wei.self { return wei as? T }
+
+      // Convert to integer types with overflow checking (treating as unsigned for now)
+      let bigUInt = wei.bigUIntValue
+
+      if T.self == BigUInt.self { return bigUInt as? T }
+
+      // Try to convert to UInt64 first
+      guard bigUInt.bitWidth <= 64, let uint64Value = UInt64(exactly: bigUInt) else {
+        return nil
+      }
+
+      if T.self == UInt64.self { return uint64Value as? T }
+      if T.self == UInt.self { return UInt(exactly: uint64Value) as? T }
+      if T.self == UInt32.self { return UInt32(exactly: uint64Value) as? T }
+      if T.self == UInt16.self { return UInt16(exactly: uint64Value) as? T }
+      if T.self == UInt8.self { return UInt8(exactly: uint64Value) as? T }
+      if T.self == Int.self { return Int(exactly: uint64Value) as? T }
+      if T.self == Int64.self { return Int64(exactly: uint64Value) as? T }
+      if T.self == Int32.self { return Int32(exactly: uint64Value) as? T }
+      if T.self == Int16.self { return Int16(exactly: uint64Value) as? T }
+      if T.self == Int8.self { return Int8(exactly: uint64Value) as? T }
       return nil
 
     case .address(let addr):

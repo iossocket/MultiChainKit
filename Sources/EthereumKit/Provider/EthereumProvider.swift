@@ -158,7 +158,9 @@ public final class EthereumProvider: JsonRpcProvider, @unchecked Sendable {
     if !tx.data.isEmpty {
       obj["data"] = "0x" + tx.data.map { String(format: "%02x", $0) }.joined()
     }
-    obj["gas"] = "0x" + String(tx.gasLimit, radix: 16)
+    if tx.gasLimit > 0 {
+      obj["gas"] = "0x" + String(tx.gasLimit, radix: 16)
+    }
     return obj
   }
 }
