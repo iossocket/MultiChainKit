@@ -127,7 +127,7 @@ public struct EthereumSignableAccount: Account, Signer, Sendable {
     )
 
     let gasHex: String = try await p.send(
-      request: p.estimateGasRequest(transaction: skeleton))
+      request: p.estimateGasRequest(transaction: skeleton, from: address))
     guard let gasLimit = UInt64(gasHex.dropFirst(2), radix: 16) else {
       throw ChainError.invalidTransaction("Cannot parse gas estimate: \(gasHex)")
     }

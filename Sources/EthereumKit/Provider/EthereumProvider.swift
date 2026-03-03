@@ -48,12 +48,12 @@ public final class EthereumProvider: JsonRpcProvider, @unchecked Sendable {
     ChainRequest(method: "eth_getTransactionReceipt", params: [hash])
   }
 
-  public func estimateGasRequest(transaction: EthereumTransaction) -> ChainRequest {
-    ChainRequest(method: "eth_estimateGas", params: [transactionPreprocess(transaction)])
+  public func estimateGasRequest(transaction: EthereumTransaction, from: EthereumAddress? = nil) -> ChainRequest {
+    ChainRequest(method: "eth_estimateGas", params: [transactionPreprocess(transaction, from: from)])
   }
 
-  public func callRequest(transaction: EthereumTransaction, block: BlockTag) -> ChainRequest {
-    ChainRequest(method: "eth_call", params: [transactionPreprocess(transaction), block.rawValue])
+  public func callRequest(transaction: EthereumTransaction, block: BlockTag, from: EthereumAddress? = nil) -> ChainRequest {
+    ChainRequest(method: "eth_call", params: [transactionPreprocess(transaction, from: from), block.rawValue])
   }
 
   // MARK: - Account State Requests
@@ -147,8 +147,11 @@ public final class EthereumProvider: JsonRpcProvider, @unchecked Sendable {
 
   // MARK: - Private
 
-  private func transactionPreprocess(_ tx: EthereumTransaction) -> [String: String] {
+  private func transactionPreprocess(_ tx: EthereumTransaction, from: EthereumAddress? = nil) -> [String: String] {
     var obj: [String: String] = [:]
+    if let from = from {
+      obj["from"] = from.checksummed
+    }
     if let to = tx.to {
       obj["to"] = to.checksummed
     }
