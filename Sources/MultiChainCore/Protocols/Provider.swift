@@ -225,9 +225,14 @@ extension JsonRpcProvider {
     if let result = response.result {
       return result
     }
-    // Result key missing or null (e.g. pending receipt) — decode R from "null".
-    // OptionalResult decodes null as value: nil; other types will fail with decodingError.
+    // Result key missing or null (e.g. pending receipt).
+    // Decode R from "null" so OptionalResult decodes as value: nil.
+    // If R cannot represent null, treat this as an invalid response instead of leaking DecodingError.
     let nullData = Data("null".utf8)
-    return try JSONDecoder().decode(R.self, from: nullData)
+    do {
+      return try JSONDecoder().decode(R.self, from: nullData)
+    } catch {
+      throw ProviderError.invalidResponse
+    }
   }
 }

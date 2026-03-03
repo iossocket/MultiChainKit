@@ -302,7 +302,15 @@ final class TransactionSendMockTests: XCTestCase {
       XCTFail("Should throw error for null result")
     } catch {
       // Expected: ProviderError.invalidResponse
-      XCTAssertTrue(error is ProviderError)
+      if let providerError = error as? ProviderError {
+        if case .invalidResponse = providerError {
+          // Success
+        } else {
+          XCTFail("Expected ProviderError.invalidResponse, got \(providerError)")
+        }
+      } else {
+        XCTFail("Expected ProviderError, got \(error)")
+      }
     }
   }
 
