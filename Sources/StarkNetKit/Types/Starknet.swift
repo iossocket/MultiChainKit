@@ -19,14 +19,23 @@ public struct Starknet: Chain, Sendable, Equatable, Hashable {
   public let name: String
   public let rpcURL: URL
   public let isTestnet: Bool
+  public let symbol: String
+  public let decimals: Int
+  public let explorerURL: URL?
 
   public var id: String { "starknet:\(chainId.hexString)" }
 
-  public init(chainId: Felt, name: String, rpcURL: URL, isTestnet: Bool) {
+  public init(
+    chainId: Felt, name: String, rpcURL: URL, isTestnet: Bool, 
+    symbol: String = "STRK", decimals: Int = 18, explorerURL: URL? = nil
+  ) {
     self.chainId = chainId
     self.name = name
     self.rpcURL = rpcURL
     self.isTestnet = isTestnet
+    self.symbol = symbol
+    self.decimals = decimals
+    self.explorerURL = explorerURL
   }
 
   // MARK: - Predefined Networks
@@ -35,21 +44,27 @@ public struct Starknet: Chain, Sendable, Equatable, Hashable {
     chainId: Felt.fromShortString("SN_MAIN"),
     name: "StarkNet Mainnet",
     rpcURL: URL(string: "https://starknet-mainnet.public.blastapi.io")!,
-    isTestnet: false
+    isTestnet: false,
+    symbol: "STRK",
+    decimals: 18,
+    explorerURL: URL(string: "https://voyager.online")!,
   )
 
   public static let sepolia = Starknet(
     chainId: Felt.fromShortString("SN_SEPOLIA"),
     name: "StarkNet Sepolia",
     rpcURL: URL(string: "https://starknet-sepolia.public.blastapi.io")!,
-    isTestnet: true
+    isTestnet: false,
+    symbol: "STRK",
+    decimals: 18,
+    explorerURL: URL(string: "https://sepolia.voyager.online")!,
   )
 
   public static let devnet = Starknet(
     chainId: Felt.fromShortString("SN_SEPOLIA"),
     name: "StarkNet Devnet",
     rpcURL: URL(string: "http://127.0.0.1:5050")!,
-    isTestnet: true
+    isTestnet: true,
   )
 
   // MARK: - Equatable & Hashable
