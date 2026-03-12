@@ -10,13 +10,11 @@ import XCTest
 
 final class TransactionSendTests: XCTestCase {
 
-  let provider = EthereumProvider(chain: .mainnet)
-
   // MARK: - Request Building
 
   func testSendRawTransactionRequest() {
     let rawTx = "0x02f8730181..."
-    let request = provider.sendRawTransactionRequest(rawTx)
+    let request = EthereumRequestBuilder.sendRawTransactionRequest(rawTx)
 
     XCTAssertEqual(request.method, "eth_sendRawTransaction")
     XCTAssertEqual(request.params.count, 1)
@@ -24,7 +22,7 @@ final class TransactionSendTests: XCTestCase {
 
   func testTransactionReceiptRequest() {
     let txHash = "0x" + String(repeating: "ab", count: 32)
-    let request = provider.transactionReceiptRequest(hash: txHash)
+    let request = EthereumRequestBuilder.transactionReceiptRequest(hash: txHash)
 
     XCTAssertEqual(request.method, "eth_getTransactionReceipt")
     XCTAssertEqual(request.params.count, 1)
@@ -32,7 +30,7 @@ final class TransactionSendTests: XCTestCase {
 
   func testGetTransactionByHashRequest() {
     let txHash = "0x" + String(repeating: "cd", count: 32)
-    let request = provider.getTransactionByHashRequest(hash: txHash)
+    let request = EthereumRequestBuilder.getTransactionByHashRequest(hash: txHash)
 
     XCTAssertEqual(request.method, "eth_getTransactionByHash")
     XCTAssertEqual(request.params.count, 1)
@@ -261,7 +259,7 @@ final class TransactionSendMockTests: XCTestCase {
 
     let provider = EthereumProvider(chain: .mainnet, session: session)
     let result: String = try await provider.send(
-      request: provider.sendRawTransactionRequest("0x02f8..."))
+      request: EthereumRequestBuilder.sendRawTransactionRequest("0x02f8..."))
 
     XCTAssertEqual(result, txHash)
   }
@@ -279,7 +277,7 @@ final class TransactionSendMockTests: XCTestCase {
     let provider = EthereumProvider(chain: .mainnet, session: session)
     let txHash = "0x" + String(repeating: "ab", count: 32)
     let receipt: EthereumReceipt = try await provider.send(
-      request: provider.transactionReceiptRequest(hash: txHash))
+      request: EthereumRequestBuilder.transactionReceiptRequest(hash: txHash))
 
     XCTAssertTrue(receipt.isSuccess)
     XCTAssertEqual(receipt.blockNumber, 256)
@@ -298,7 +296,7 @@ final class TransactionSendMockTests: XCTestCase {
 
     do {
       let _: EthereumReceipt = try await provider.send(
-        request: provider.transactionReceiptRequest(hash: txHash))
+        request: EthereumRequestBuilder.transactionReceiptRequest(hash: txHash))
       XCTFail("Should throw error for null result")
     } catch {
       // Expected: ProviderError.invalidResponse
@@ -326,7 +324,7 @@ final class TransactionSendMockTests: XCTestCase {
 
     let provider = EthereumProvider(chain: .mainnet, session: session)
     let tx: EthereumTransactionResponse = try await provider.send(
-      request: provider.getTransactionByHashRequest(hash: "0xtx"))
+      request: EthereumRequestBuilder.getTransactionByHashRequest(hash: "0xtx"))
 
     XCTAssertFalse(tx.isPending)
     XCTAssertEqual(tx.nonce, "0x5")
@@ -357,13 +355,13 @@ final class TransactionSendAnvilTests: XCTestCase {
   func testSendTransaction() async throws {
     // 1. Get nonce
     let nonceHex: String = try await provider.send(
-      request: provider.getTransactionCountRequest(address: fromAddress, block: .pending)
+      request: EthereumRequestBuilder.getTransactionCountRequest(address: fromAddress, block: .pending)
     )
     let nonce = UInt64(nonceHex.dropFirst(2), radix: 16) ?? 0
     print("nonce: \(nonce)")
 
     // 2. Get gas price
-    let gasPriceHex: String = try await provider.send(request: provider.gasPriceRequest())
+    let gasPriceHex: String = try await provider.send(request: EthereumRequestBuilder.gasPriceRequest())
     let gasPrice = Wei(gasPriceHex) ?? .zero
     print("gasPrice: \(gasPrice)")
 
@@ -389,7 +387,7 @@ final class TransactionSendAnvilTests: XCTestCase {
       return
     }
 
-    let txHash: String = try await provider.send(request: provider.sendRawTransactionRequest(rawTx))
+    let txHash: String = try await provider.send(request: EthereumRequestBuilder.sendRawTransactionRequest(rawTx))
     print("txHash: \(txHash)")
     XCTAssertTrue(txHash.hasPrefix("0x"))
     XCTAssertEqual(txHash.count, 66)  // 0x + 64 hex chars
@@ -398,7 +396,7 @@ final class TransactionSendAnvilTests: XCTestCase {
     try await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
 
     let receipt: EthereumReceipt = try await provider.send(
-      request: provider.transactionReceiptRequest(hash: txHash)
+      request: EthereumRequestBuilder.transactionReceiptRequest(hash: txHash)
     )
     print("receipt: \(receipt)")
     XCTAssertTrue(receipt.isSuccess)

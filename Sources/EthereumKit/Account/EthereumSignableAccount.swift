@@ -95,11 +95,11 @@ public struct EthereumSignableAccount: Account, Signer, Sendable {
     let p = try requireProvider()
 
     let nonceHex: String = try await p.send(
-      request: p.getTransactionCountRequest(address: address, block: .pending))
+      request: EthereumRequestBuilder.getTransactionCountRequest(address: address, block: .pending))
     let priorityFeeHex: String = try await p.send(
-      request: p.maxPriorityFeePerGasRequest())
+      request: EthereumRequestBuilder.maxPriorityFeePerGasRequest())
     let block: EthereumBlock = try await p.send(
-      request: p.getBlockByNumberRequest(block: .latest, fullTransactions: false))
+      request: EthereumRequestBuilder.getBlockByNumberRequest(block: .latest, fullTransactions: false))
 
     guard let nonce = UInt64(nonceHex.dropFirst(2), radix: 16) else {
       throw ChainError.invalidTransaction("Cannot parse nonce: \(nonceHex)")
@@ -127,7 +127,7 @@ public struct EthereumSignableAccount: Account, Signer, Sendable {
     )
 
     let gasHex: String = try await p.send(
-      request: p.estimateGasRequest(transaction: skeleton, from: address))
+      request: EthereumRequestBuilder.estimateGasRequest(transaction: skeleton, from: address))
     guard let gasLimit = UInt64(gasHex.dropFirst(2), radix: 16) else {
       throw ChainError.invalidTransaction("Cannot parse gas estimate: \(gasHex)")
     }
@@ -156,7 +156,7 @@ public struct EthereumSignableAccount: Account, Signer, Sendable {
     guard let raw = tx.rawTransaction else {
       throw ChainError.invalidTransaction("Failed to encode signed transaction")
     }
-    return try await p.send(request: p.sendRawTransactionRequest(raw))
+    return try await p.send(request: EthereumRequestBuilder.sendRawTransactionRequest(raw))
   }
 
   private func requireProvider() throws -> EthereumProvider {

@@ -75,13 +75,13 @@ let account = EthereumAccount(address: address)
 
 ### 2.2 Signable Account (EthereumSignableAccount)
 
-Used for signing transactions, messages, EIP-712, etc. Two ways to create:
+Used for signing transactions, messages, EIP-712, etc. All initializers accept an optional `provider` for convenience methods (`sendTransaction`, `prepareTransaction`).
 
 **From private key:**
 
 ```swift
 let privateKeyData: Data = ... // 32 bytes
-let signable = try EthereumSignableAccount(privateKey: privateKeyData)
+let signable = try EthereumSignableAccount(privateKey: privateKeyData, provider: provider)
 let address = signable.address.checksummed
 ```
 
@@ -89,7 +89,14 @@ let address = signable.address.checksummed
 
 ```swift
 let mnemonic = "abandon abandon abandon ..."
-let signable = try EthereumSignableAccount(mnemonic: mnemonic, path: .ethereum)
+let signable = try EthereumSignableAccount(mnemonic: mnemonic, path: .ethereum, provider: provider)
+```
+
+**From EthereumSigner:**
+
+```swift
+let signer = try EthereumSigner(privateKey: privateKeyData)
+let signable = try EthereumSignableAccount(signer, provider: provider)
 ```
 
 Common derivation paths (defined in `MultiChainCore`):
@@ -120,8 +127,13 @@ addr.data         // 20-byte Data
 ### 3.1 Built-in Chains
 
 ```swift
-Ethereum.mainnet  // chainId: 1
-Ethereum.sepolia  // chainId: 11155111
+EvmChain.mainnet      // Ethereum Mainnet, chainId: 1
+EvmChain.sepolia      // Sepolia testnet, chainId: 11155111
+EvmChain.anvil        // Local Anvil, chainId: 31337
+EvmChain.bsc          // BNB Smart Chain, chainId: 56, symbol: "BNB"
+EvmChain.polygon      // Polygon, chainId: 137, symbol: "POL"
+EvmChain.arbitrumOne  // Arbitrum One, chainId: 42161
+EvmChain.base         // Base, chainId: 8453
 ```
 
 ### 3.2 Creating a Provider
@@ -147,11 +159,13 @@ let provider = EthereumProvider(chain: .mainnet, session: myURLSession)
 
 ### 3.3 Sending Requests
 
-All RPC calls go through `provider.send(request:)`; the return type is specified by the generic:
+All RPC calls go through `provider.send(request:)`; requests are built via `EthereumRequestBuilder`:
 
 ```swift
 // Single request
-let balanceHex: String = try await provider.send(request: provider.getBalanceRequest(address: addr, block: .latest))
+let balanceHex: String = try await provider.send(
+    request: EthereumRequestBuilder.getBalanceRequest(address: addr, block: .latest)
+)
 
 // Batch requests (returns [Result<R, ProviderError>])
 let requests: [ChainRequest] = [...]
@@ -182,7 +196,7 @@ print(wei.toGweiDecimal())   // Commonly used for gas price
 
 ```swift
 let nonceHex: String = try await provider.send(
-    request: provider.getTransactionCountRequest(address: signable.address, block: .pending)
+    request: EthereumRequestBuilder.getTransactionCountRequest(address: signable.address, block: .pending)
 )
 let nonce = UInt64(nonceHex.dropFirst(2), radix: 16) ?? 0
 ```
@@ -193,11 +207,11 @@ Use `block: .pending` when sending transactions so the nonce includes in-flight 
 
 ```swift
 // Current block number
-let blockNumberHex: String = try await provider.send(request: provider.blockNumberRequest())
+let blockNumberHex: String = try await provider.send(request: EthereumRequestBuilder.blockNumberRequest())
 
 // Transaction receipt
 let receipt: EthereumReceipt? = try await provider.send(
-    request: provider.transactionReceiptRequest(hash: txHash)
+    request: EthereumRequestBuilder.transactionReceiptRequest(hash: txHash)
 )
 ```
 
@@ -207,7 +221,40 @@ let receipt: EthereumReceipt? = try await provider.send(
 
 ## 5. Ethereum: Transfers
 
-### 5.1 Full Flow (EIP-1559)
+### 5.1 Convenience: sendTransaction
+
+With a provider attached, `sendTransaction` auto-fills nonce, gas limit, and EIP-1559 fees:
+
+```swift
+let provider = EthereumProvider(chain: .sepolia)
+let signable = try EthereumSignableAccount(privateKey: privateKeyData, provider: provider)
+
+let txHash = try await signable.sendTransaction(
+    to: EthereumAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")!,
+    value: Wei.fromEther(1)
+)
+
+// Wait for confirmation
+let receipt = try await provider.waitForTransaction(hash: txHash)
+```
+
+You can also prepare without sending:
+
+```swift
+var tx = try await signable.prepareTransaction(
+    to: EthereumAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")!,
+    value: Wei.fromEther(1)
+)
+// Inspect or modify tx before signing
+try signable.sign(transaction: &tx)
+let txHash: String = try await provider.send(
+    request: EthereumRequestBuilder.sendRawTransactionRequest(tx.rawTransaction!)
+)
+```
+
+### 5.2 Manual Flow (EIP-1559)
+
+For full control over gas parameters:
 
 ```swift
 let provider = EthereumProvider(chain: .sepolia)
@@ -215,7 +262,7 @@ let signable = try EthereumSignableAccount(privateKey: privateKeyData)
 
 // 1. Get nonce
 let nonceHex: String = try await provider.send(
-    request: provider.getTransactionCountRequest(address: signable.address, block: .pending)
+    request: EthereumRequestBuilder.getTransactionCountRequest(address: signable.address, block: .pending)
 )
 let nonce = UInt64(nonceHex.dropFirst(2), radix: 16) ?? 0
 
@@ -234,10 +281,12 @@ try signable.sign(transaction: &tx)
 
 // 4. Send
 guard let rawTx = tx.rawTransaction else { return }
-let txHash: String = try await provider.send(request: provider.sendRawTransactionRequest(rawTx))
+let txHash: String = try await provider.send(
+    request: EthereumRequestBuilder.sendRawTransactionRequest(rawTx)
+)
 ```
 
-### 5.2 Gas and Custom Transactions
+### 5.3 Gas and Custom Transactions
 
 `transferTransaction` uses a fixed `gasLimit: 21000`. For contract calls or custom `data`, build an `EthereumTransaction` yourself:
 
@@ -257,11 +306,22 @@ try signable.sign(transaction: &tx)
 
 You can also use factory methods: `EthereumTransaction.eip1559(...)`, `.legacy(...)`, `.eip2930(...)`.
 
-### 5.3 Getting Gas Suggestions
+### 5.4 Getting Gas Suggestions
 
 ```swift
-let maxPriorityHex: String = try await provider.send(request: provider.maxPriorityFeePerGasRequest())
+let maxPriorityHex: String = try await provider.send(request: EthereumRequestBuilder.maxPriorityFeePerGasRequest())
 // Or eth_gasPrice, eth_feeHistory, etc., then convert to Wei for building
+```
+
+### 5.5 Waiting for Confirmation
+
+```swift
+// Default: 1 confirmation, 3s interval, 60s timeout
+let receipt = try await provider.waitForTransaction(hash: txHash)
+
+// Custom: wait for 3 confirmations with longer timeout
+let config = PollingConfig(intervalSeconds: 2, timeoutSeconds: 120)
+let receipt = try await provider.waitForTransaction(hash: txHash, confirmations: 3, config: config)
 ```
 
 ---
@@ -372,7 +432,19 @@ let balance = results.first?.as(Wei.self)
 let balance: Wei = try await contract.readSingle(functionName: "balanceOf", args: [.address(userAddress)])
 ```
 
-**Encode write and send transaction:**
+**Write (convenience — auto nonce + gas + sign + broadcast):**
+
+```swift
+let txHash = try await contract.write(
+    functionName: "transfer",
+    args: [.address(toAddress), .uint256(Wei.fromEther(1))],
+    account: signable
+)
+```
+
+Requires the `signable` account to have a provider attached.
+
+**Encode write and send transaction (manual):**
 
 ```swift
 let calldata = try contract.encodeWrite(
@@ -391,7 +463,9 @@ var tx = EthereumTransaction(
     data: calldata
 )
 try signable.sign(transaction: &tx)
-let txHash: String = try await provider.send(request: provider.sendRawTransactionRequest(tx.rawTransaction!))
+let txHash: String = try await provider.send(
+    request: EthereumRequestBuilder.sendRawTransactionRequest(tx.rawTransaction!)
+)
 ```
 
 **Estimate gas:**
@@ -513,6 +587,7 @@ addr.data         // 32-byte Data
 ```swift
 Starknet.mainnet  // chainId: SN_MAIN
 Starknet.sepolia  // chainId: SN_SEPOLIA
+Starknet.devnet   // Local devnet
 ```
 
 ### 10.2 Creating a Provider
@@ -526,22 +601,24 @@ let provider = StarknetProvider(chain: .mainnet, session: myURLSession)
 
 ### 10.3 Common Requests
 
+Requests are built via `StarknetRequestBuilder`:
+
 ```swift
 // Chain state
-let chainId: String = try await provider.send(request: provider.chainIdRequest())
-let blockNum: UInt64 = try await provider.send(request: provider.blockNumberRequest())
+let chainId: String = try await provider.send(request: StarknetRequestBuilder.chainIdRequest())
+let blockNum: UInt64 = try await provider.send(request: StarknetRequestBuilder.blockNumberRequest())
 
 // Account state
-let nonceHex: String = try await provider.send(request: provider.getNonceRequest(address: addr))
-let classHash: String = try await provider.send(request: provider.getClassHashAtRequest(address: addr))
+let nonceHex: String = try await provider.send(request: StarknetRequestBuilder.getNonceRequest(address: addr))
+let classHash: String = try await provider.send(request: StarknetRequestBuilder.getClassHashAtRequest(address: addr))
 
 // Contract call (read-only)
 let call = StarknetCall(contractAddress: contractFelt, entrypoint: "balanceOf", calldata: [addressFelt])
-let result: [String] = try await provider.send(request: provider.callRequest(call: call))
+let result: [String] = try await provider.send(request: StarknetRequestBuilder.callRequest(call: call))
 
 // Transaction receipt
 let receipt: StarknetReceipt = try await provider.send(
-    request: provider.getTransactionReceiptRequest(hash: txHashFelt)
+    request: StarknetRequestBuilder.getTransactionReceiptRequest(hash: txHashFelt)
 )
 ```
 
@@ -580,7 +657,7 @@ let signed = try account.signInvokeV3(tx)
 
 // Send
 let response: StarknetInvokeTransactionResponse = try await provider.send(
-    request: provider.addInvokeTransactionRequest(invokeV3: signed)
+    request: StarknetRequestBuilder.addInvokeTransactionRequest(invokeV3: signed)
 )
 print(response.transactionHashFelt)
 ```
@@ -618,7 +695,7 @@ let deployTx = StarknetDeployAccountV3(
 )
 let signed = try account.signDeployAccountV3(deployTx)
 let response: StarknetInvokeTransactionResponse = try await provider.send(
-    request: provider.addDeployAccountTransactionRequest(deployV3: signed)
+    request: StarknetRequestBuilder.addDeployAccountTransactionRequest(deployV3: signed)
 )
 ```
 
@@ -814,38 +891,56 @@ let wallet = try MultiChainWallet(
 
 ### 15.1 Ethereum Types
 
-| Type                                               | Description                                                        |
-| -------------------------------------------------- | ------------------------------------------------------------------ |
-| `EthereumAccount`                                  | Read-only account (address only); balance/nonce queries            |
-| `EthereumSignableAccount`                          | Signable account; private key/mnemonic, transfers, message signing |
-| `EthereumProvider`                                 | JSON-RPC wrapper; `send(request:)` / `send(requests:)`             |
-| `Ethereum`                                         | Chain definition; chainId, name, rpcURL, mainnet/sepolia           |
-| `EthereumAddress`                                  | 20-byte address; EIP-55 checksum                                   |
-| `Wei`                                              | Big-int amount; hex, Gwei/Ether conversion, arithmetic             |
-| `EthereumTransaction`                              | Transaction (Legacy / EIP-2930 / EIP-1559); signing and RLP        |
-| `EthereumContract`                                 | Contract wrapper; read, encodeWrite, estimateGas, getLogs          |
-| `ABIValue`                                         | ABI encode/decode values; encodeCall, functionSelector             |
-| `BlockTag`                                         | latest / pending / earliest / number                               |
-| `EIP712TypedData` / `EIP712Domain` / `EIP712Value` | EIP-712 types and signHash()                                       |
+| Type                                               | Description                                                                  |
+| -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `EthereumAccount`                                  | Read-only account (address only); balance/nonce queries                      |
+| `EthereumSignableAccount`                          | Signable account; private key/mnemonic, optional provider for convenience    |
+| `EthereumProvider`                                 | JSON-RPC wrapper; `send(request:)` / `send(requests:)`, `waitForTransaction`|
+| `EthereumRequestBuilder`                           | Static enum; builds all Ethereum JSON-RPC requests                           |
+| `EvmChain`                                         | Chain definition; chainId, name, rpcURL, symbol, decimals, explorerURL       |
+| `EthereumAddress`                                  | 20-byte address; EIP-55 checksum                                             |
+| `Wei`                                              | Big-int amount; hex, Gwei/Ether conversion, arithmetic                       |
+| `EthereumTransaction`                              | Transaction (Legacy / EIP-2930 / EIP-1559); signing and RLP                  |
+| `EthereumReceipt`                                  | Transaction receipt; status, logs, gasUsed, blockNumber                       |
+| `EthereumContract`                                 | Contract wrapper; read, readSingle, write, encodeWrite, estimateGas, getLogs |
+| `ABIValue`                                         | ABI encode/decode values; encodeCall, functionSelector                       |
+| `ABIType`                                          | ABI type parsing from strings                                                |
+| `ABIEvent`                                         | Event encoding/decoding with topic filtering                                 |
+| `DecodedLog`                                       | Decoded event log; log, event, args dict                                     |
+| `BlockTag`                                         | latest / pending / earliest / number                                         |
+| `EIP712TypedData` / `EIP712Domain` / `EIP712Value` | EIP-712 types and signHash()                                                 |
+| `PollingConfig`                                    | Polling interval and timeout for waitForTransaction                          |
+| `EthereumAccountError`                             | `.noProvider` — thrown when convenience methods lack a provider               |
+| `ContractError`                                    | Contract-specific errors (functionNotFound, argumentCountMismatch, etc.)      |
 
 ### 15.2 Starknet Types
 
-| Type                          | Description                                                          |
-| ----------------------------- | -------------------------------------------------------------------- |
-| `StarknetAccount`             | Signable account; signer + address, build/sign/execute transactions  |
-| `StarknetSigner`              | Stark curve signer; from private key, mnemonic, or Data             |
-| `StarknetProvider`            | JSON-RPC wrapper; send, fee estimation, transaction polling          |
-| `Starknet`                    | Chain definition; chainId, rpcURL, mainnet/sepolia                   |
-| `StarknetAddress`             | 32-byte address; checksummed hex                                     |
-| `Felt`                        | Field element (< 2^251 + 17*2^192 + 1); hex, arithmetic, Data       |
-| `StarknetContract`            | Contract wrapper; call, invoke, estimateFee, getEvents, decodeEvent  |
-| `CairoValue` / `CairoType`   | Cairo type codec; encode/decode calldata for all Cairo types         |
-| `StarknetBlockId`             | latest / pending / number / hash                                     |
-| `OpenZeppelinAccount`         | Account type; classHash, constructorCalldata, computeAddress         |
-| `StarknetKeyDerivation`       | BIP32 + EIP-2645 key grinding into Stark curve                      |
-| `SNIP12TypedData` / `SNIP12Domain` / `SNIP12Value` | SNIP-12 types and messageHash()                |
-| `StarknetReceipt`             | Transaction receipt; status, events, fee, messages                   |
-| `PollingConfig`               | Polling interval and timeout for waitForTransaction                  |
+| Type                                              | Description                                                          |
+| ------------------------------------------------- | -------------------------------------------------------------------- |
+| `StarknetAccount`                                 | Signable account; signer + address, build/sign/execute transactions  |
+| `StarknetSigner`                                  | Stark curve signer; from private key, mnemonic, or Data             |
+| `StarknetProvider`                                | JSON-RPC wrapper; send, `waitForTransaction`                         |
+| `StarknetRequestBuilder`                          | Static enum; builds all Starknet JSON-RPC requests                   |
+| `Starknet`                                        | Chain definition; chainId (Felt), rpcURL, mainnet/sepolia/devnet     |
+| `StarknetAddress`                                 | 32-byte address; checksummed hex                                     |
+| `Felt`                                            | Field element (< 2^251 + 17*2^192 + 1); hex, arithmetic, Data       |
+| `StarknetContract`                                | Contract wrapper; call, callRaw, invoke, estimateFee, getEvents      |
+| `CairoValue` / `CairoType`                       | Cairo type codec; encode/decode calldata for all Cairo types         |
+| `CairoByteArray`                                  | 31-byte chunk encoding for strings > 31 bytes                       |
+| `StarknetBlockId`                                 | latest / pending / number / hash                                     |
+| `StarknetResourceBoundsMapping`                   | L1 gas, L2 gas, L1 data gas bounds for V3 transactions              |
+| `StarknetDAMode`                                  | Data availability mode (L1 or L2)                                    |
+| `OpenZeppelinAccount`                             | Account type; classHash, constructorCalldata, computeAddress         |
+| `StarknetKeyDerivation`                           | BIP32 + EIP-2645 key grinding into Stark curve                      |
+| `SNIP12TypedData` / `SNIP12Domain` / `SNIP12Value`| SNIP-12 types and messageHash()                                     |
+| `StarknetReceipt`                                 | Transaction receipt; status, events, fee, messages                   |
+| `StarknetTransactionStatus`                       | Transaction status; finalityStatus, executionStatus, failureReason   |
+| `StarknetFeeEstimate`                             | Fee estimation response; overallFeeFelt convenience                  |
+| `StarknetInvokeTransactionResponse`               | Invoke response; transactionHashFelt convenience                     |
+| `StarknetDecodedEvent`                            | Decoded event; name, keys dict, data dict                            |
+| `StarknetEventFilter`                             | Event filter for getEvents; fromBlock, toBlock, address, keys        |
+| `StarknetAccountError`                            | `.noProvider`, `.emptyFeeEstimate`                                   |
+| `StarknetContractError`                           | Contract-specific errors (functionNotFound, eventNotFound, etc.)      |
 
 ### 15.3 Wei Common API
 
@@ -871,19 +966,32 @@ Felt.fromShortString("SN_SEPOLIA")  // Short string encoding
 felt.toShortString()     // Decode short string
 ```
 
-### 15.5 Ethereum Provider Request Methods
+### 15.5 EthereumRequestBuilder Methods
+
+All methods are static on `EthereumRequestBuilder`:
 
 - `getBalanceRequest(address:block:)`
 - `getTransactionCountRequest(address:block:)`
 - `sendRawTransactionRequest(_ rawTx:)`
-- `callRequest(transaction:block:)`
-- `estimateGasRequest(transaction:)`
+- `callRequest(transaction:block:from:)`
+- `estimateGasRequest(transaction:from:)`
 - `transactionReceiptRequest(hash:)`
-- `blockNumberRequest()`, `chainIdRequest()`, `maxPriorityFeePerGasRequest()`
+- `blockNumberRequest()`, `chainIdRequest()`, `gasPriceRequest()`
+- `maxPriorityFeePerGasRequest()`
+- `getCodeRequest(address:block:)`
+- `getStorageAtRequest(address:position:block:)`
+- `getBlockByNumberRequest(block:fullTransactions:)`
+- `getTransactionByHashRequest(hash:)`
+- `feeHistoryRequest(blockCount:newestBlock:rewardPercentiles:)`
 
-### 15.6 Starknet Provider Request Methods
+`EthereumProvider` also provides:
+- `waitForTransaction(hash:confirmations:config:)` — polls receipt until confirmed
 
-- `chainIdRequest()`, `blockNumberRequest()`
+### 15.6 StarknetRequestBuilder Methods
+
+All methods are static on `StarknetRequestBuilder`:
+
+- `chainIdRequest()`, `blockNumberRequest()`, `blockHashAndNumberRequest()`, `syncing()`
 - `getNonceRequest(address:block:)`
 - `getClassHashAtRequest(address:block:)`
 - `callRequest(call:block:)`
@@ -892,7 +1000,9 @@ felt.toShortString()     // Decode short string
 - `addDeployAccountTransactionRequest(deployV3:)`, `addDeployAccountTransactionRequest(deployV1:)`
 - `getEventsRequest(filter:)`
 - `getTransactionByHashRequest(hash:)`, `getTransactionReceiptRequest(hash:)`, `getTransactionStatusRequest(hash:)`
-- `waitForTransaction(hash:config:)`
+
+`StarknetProvider` also provides:
+- `waitForTransaction(hash:config:)` — polls status until accepted, then fetches receipt
 
 ---
 
@@ -903,14 +1013,17 @@ felt.toShortString()     // Decode short string
 **Ethereum:**
 
 - **Invalid private key/mnemonic:** Ensure private key is 32 bytes; mnemonic passes BIP39 validation and matches the derivation path.
+- **EthereumAccountError.noProvider:** Attach a provider to `EthereumSignableAccount` before calling `sendTransaction`, `prepareTransaction`, or `contract.write`. Pass it via the initializer: `EthereumSignableAccount(privateKey: data, provider: provider)`.
 - **RPC returns 4xx/5xx:** Check URL, network, and RPC rate limits; use a custom `URLSession` if needed.
 - **Signing fails:** Use `EthereumSignableAccount`, call `sign(transaction:)` on a `var tx`, then use `tx.rawTransaction`.
 - **Contract call fails:** Verify ABI and function name/parameter types match the contract; write operations must be signed before `sendRawTransaction`.
+- **ProviderError.timeout:** `waitForTransaction` exceeded the polling deadline. Increase `PollingConfig.timeoutSeconds` or check if the transaction was dropped.
 
 **Starknet:**
 
 - **Invalid private key:** Stark private key must be non-zero and less than the curve order (~2^251).
-- **noProvider error:** Attach a provider to `StarknetAccount` before calling `executeV3`, `estimateFee`, or other network methods.
+- **StarknetAccountError.noProvider:** Attach a provider to `StarknetAccount` before calling `executeV3`, `estimateFee`, or other network methods.
+- **StarknetAccountError.emptyFeeEstimate:** Fee estimation returned no results; check that the calls are valid and the account is deployed.
 - **Transaction REJECTED/REVERTED:** Check the failure reason in `StarknetTransactionStatus`; common causes are insufficient fee, wrong nonce, or contract logic errors.
 - **Contract function not found:** Ensure the function name matches the ABI exactly; interface functions are flattened into the functions dict.
 - **Event decoding fails:** Event names are matched by short name (e.g. "Transfer", not the fully-qualified Cairo path).
@@ -921,7 +1034,7 @@ felt.toShortString()     // Decode short string
 swift test
 ```
 
-Tests live in `Tests/EthereumKitTests/`, `Tests/StarknetKitTests/`, and `Tests/MultiChainKitTests/`; they cover accounts, signing, transactions, ABI, contracts, typed data, and more. They double as usage examples.
+380+ tests across 4 test targets: `Tests/EthereumKitTests/`, `Tests/StarknetKitTests/`, `Tests/MultiChainCoreTests/`, and `Tests/MultiChainKitTests/`. They cover accounts, signing, transactions, ABI, contracts, typed data, and more. They double as usage examples. 5 tests are skipped (require local devnet).
 
 ### 16.3 Examples and Further Docs
 

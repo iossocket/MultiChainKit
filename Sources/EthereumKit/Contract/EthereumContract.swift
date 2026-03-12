@@ -54,7 +54,7 @@ public struct EthereumContract: Sendable {
       data: calldata
     )
 
-    let request = provider.callRequest(transaction: tx, block: block)
+    let request = EthereumRequestBuilder.callRequest(transaction: tx, block: block)
     let result: String = try await provider.send(request: request)
     let resultData = Data(hex: String(result.dropFirst(2)))
 
@@ -110,7 +110,7 @@ public struct EthereumContract: Sendable {
       data: calldata
     )
 
-    let request = provider.estimateGasRequest(transaction: tx)
+    let request = EthereumRequestBuilder.estimateGasRequest(transaction: tx)
     return try await provider.send(request: request)
   }
 

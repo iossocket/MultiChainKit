@@ -16,19 +16,17 @@ import Testing
 @Suite("StarknetProvider Requests")
 struct StarknetProviderRequestTests {
 
-  let provider = StarknetProvider(chain: .sepolia)
-
   // MARK: - Chain State
 
   @Test("chainId request method")
   func chainIdRequest() {
-    let req = provider.chainIdRequest()
+    let req = StarknetRequestBuilder.chainIdRequest()
     #expect(req.method == "starknet_chainId")
   }
 
   @Test("blockNumber request method")
   func blockNumberRequest() {
-    let req = provider.blockNumberRequest()
+    let req = StarknetRequestBuilder.blockNumberRequest()
     #expect(req.method == "starknet_blockNumber")
   }
 
@@ -37,7 +35,7 @@ struct StarknetProviderRequestTests {
   @Test("getNonce request method and params")
   func getNonceRequest() {
     let addr = StarknetAddress("0x1234")!
-    let req = provider.getNonceRequest(address: addr)
+    let req = StarknetRequestBuilder.getNonceRequest(address: addr)
     #expect(req.method == "starknet_getNonce")
     #expect(req.params.count == 2)
   }
@@ -45,7 +43,7 @@ struct StarknetProviderRequestTests {
   @Test("getClassHashAt request method")
   func getClassHashAtRequest() {
     let addr = StarknetAddress("0x1234")!
-    let req = provider.getClassHashAtRequest(address: addr)
+    let req = StarknetRequestBuilder.getClassHashAtRequest(address: addr)
     #expect(req.method == "starknet_getClassHashAt")
     #expect(req.params.count == 2)
   }
@@ -56,7 +54,7 @@ struct StarknetProviderRequestTests {
   func callRequest() {
     let call = StarknetCall(
       contractAddress: Felt(0x1), entryPointSelector: Felt(0x2), calldata: [Felt(0x3)])
-    let req = provider.callRequest(call: call)
+    let req = StarknetRequestBuilder.callRequest(call: call)
     #expect(req.method == "starknet_call")
     #expect(req.params.count == 2)
   }
@@ -66,21 +64,21 @@ struct StarknetProviderRequestTests {
   @Test("getTransactionByHash request")
   func getTransactionByHash() {
     let hash = Felt(0xabc)
-    let req = provider.getTransactionByHashRequest(hash: hash)
+    let req = StarknetRequestBuilder.getTransactionByHashRequest(hash: hash)
     #expect(req.method == "starknet_getTransactionByHash")
   }
 
   @Test("getTransactionReceipt request")
   func getTransactionReceipt() {
     let hash = Felt(0xabc)
-    let req = provider.getTransactionReceiptRequest(hash: hash)
+    let req = StarknetRequestBuilder.getTransactionReceiptRequest(hash: hash)
     #expect(req.method == "starknet_getTransactionReceipt")
   }
 
   @Test("getTransactionStatus request")
   func getTransactionStatus() {
     let hash = Felt(0xabc)
-    let req = provider.getTransactionStatusRequest(hash: hash)
+    let req = StarknetRequestBuilder.getTransactionStatusRequest(hash: hash)
     #expect(req.method == "starknet_getTransactionStatus")
   }
 
@@ -94,7 +92,7 @@ struct StarknetProviderRequestTests {
       chainId: Felt.fromShortString("SN_SEPOLIA"),
       signature: [Felt(0xa1), Felt(0xa2)]
     )
-    let req = provider.addInvokeTransactionRequest(invokeV1: tx)
+    let req = StarknetRequestBuilder.addInvokeTransactionRequest(invokeV1: tx)
     #expect(req.method == "starknet_addInvokeTransaction")
     #expect(req.params.count == 1)
   }
@@ -107,7 +105,7 @@ struct StarknetProviderRequestTests {
       chainId: Felt.fromShortString("SN_SEPOLIA"),
       signature: [Felt(0xa), Felt(0xb)]
     )
-    let req = provider.addInvokeTransactionRequest(invokeV3: tx)
+    let req = StarknetRequestBuilder.addInvokeTransactionRequest(invokeV3: tx)
     #expect(req.method == "starknet_addInvokeTransaction")
     #expect(req.params.count == 1)
   }
@@ -119,7 +117,7 @@ struct StarknetProviderRequestTests {
       constructorCalldata: [Felt(0x333)], maxFee: Felt(500),
       nonce: .zero, chainId: Felt.fromShortString("SN_SEPOLIA")
     )
-    let req = provider.addDeployAccountTransactionRequest(deployV1: tx)
+    let req = StarknetRequestBuilder.addDeployAccountTransactionRequest(deployV1: tx)
     #expect(req.method == "starknet_addDeployAccountTransaction")
     #expect(req.params.count == 1)
   }
@@ -269,7 +267,7 @@ struct StarknetProviderDevnetTests {
   func requireDevnet() async throws {
     let reachable: Bool
     do {
-      let _: String = try await provider.send(request: provider.chainIdRequest())
+      let _: String = try await provider.send(request: StarknetRequestBuilder.chainIdRequest())
       reachable = true
     } catch {
       reachable = false
@@ -280,7 +278,7 @@ struct StarknetProviderDevnetTests {
   @Test("starknet_chainId returns SN_SEPOLIA")
   func chainId() async throws {
     try await requireDevnet()
-    let result: String = try await provider.send(request: provider.chainIdRequest())
+    let result: String = try await provider.send(request: StarknetRequestBuilder.chainIdRequest())
     // "SN_SEPOLIA" encoded as hex
     #expect(result == "0x534e5f5345504f4c4941")
   }
@@ -288,7 +286,7 @@ struct StarknetProviderDevnetTests {
   @Test("starknet_blockNumber returns a number")
   func blockNumber() async throws {
     try await requireDevnet()
-    let result: Int = try await provider.send(request: provider.blockNumberRequest())
+    let result: Int = try await provider.send(request: StarknetRequestBuilder.blockNumberRequest())
     #expect(result >= 0)
   }
 
@@ -296,7 +294,7 @@ struct StarknetProviderDevnetTests {
   func getNonce() async throws {
     try await requireDevnet()
     let result: String = try await provider.send(
-      request: provider.getNonceRequest(address: account0Address))
+      request: StarknetRequestBuilder.getNonceRequest(address: account0Address))
     // Nonce should be a hex string like "0x0"
     #expect(result.hasPrefix("0x"))
   }
@@ -313,7 +311,7 @@ struct StarknetProviderDevnetTests {
       calldata: [Felt(account0Address.data)]  // account address as felt
     )
     let result: [String] = try await provider.send(
-      request: provider.callRequest(call: call))
+      request: StarknetRequestBuilder.callRequest(call: call))
     // Should return [low, high] for u256 balance
     #expect(result.count >= 1)
     // Predeployed account has 1000000000000000000000 WEI initial balance
@@ -325,7 +323,7 @@ struct StarknetProviderDevnetTests {
   func getClassHashAt() async throws {
     try await requireDevnet()
     let result: String = try await provider.send(
-      request: provider.getClassHashAtRequest(address: account0Address))
+      request: StarknetRequestBuilder.getClassHashAtRequest(address: account0Address))
     #expect(result.hasPrefix("0x"))
     // Should be the custom class hash from devnet
     #expect(result == "0x5b4b537eaa2399e3aa99c4e2e0208ebd6c71bc1467938cd52c798c601e43564")

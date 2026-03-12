@@ -130,49 +130,43 @@ final class EthereumProviderTests: XCTestCase {
   // MARK: - Convenience Methods
 
   func testGetBlockNumberRequest() {
-    let provider = EthereumProvider(chain: .mainnet)
-    let request = provider.blockNumberRequest()
+    let request = EthereumRequestBuilder.blockNumberRequest()
 
     XCTAssertEqual(request.method, "eth_blockNumber")
     XCTAssertEqual(request.params.count, 0)
   }
 
   func testGetChainIdRequest() {
-    let provider = EthereumProvider(chain: .mainnet)
-    let request = provider.chainIdRequest()
+    let request = EthereumRequestBuilder.chainIdRequest()
 
     XCTAssertEqual(request.method, "eth_chainId")
     XCTAssertEqual(request.params.count, 0)
   }
 
   func testGetGasPriceRequest() {
-    let provider = EthereumProvider(chain: .mainnet)
-    let request = provider.gasPriceRequest()
+    let request = EthereumRequestBuilder.gasPriceRequest()
 
     XCTAssertEqual(request.method, "eth_gasPrice")
     XCTAssertEqual(request.params.count, 0)
   }
 
   func testSendRawTransactionRequest() {
-    let provider = EthereumProvider(chain: .mainnet)
     let rawTx = "0x02f8..."
-    let request = provider.sendRawTransactionRequest(rawTx)
+    let request = EthereumRequestBuilder.sendRawTransactionRequest(rawTx)
 
     XCTAssertEqual(request.method, "eth_sendRawTransaction")
     XCTAssertEqual(request.params.count, 1)
   }
 
   func testGetTransactionReceiptRequest() {
-    let provider = EthereumProvider(chain: .mainnet)
     let txHash = "0x" + String(repeating: "ab", count: 32)
-    let request = provider.transactionReceiptRequest(hash: txHash)
+    let request = EthereumRequestBuilder.transactionReceiptRequest(hash: txHash)
 
     XCTAssertEqual(request.method, "eth_getTransactionReceipt")
     XCTAssertEqual(request.params.count, 1)
   }
 
   func testEstimateGasRequest() {
-    let provider = EthereumProvider(chain: .mainnet)
     let tx = EthereumTransaction(
       chainId: 1,
       nonce: 0,
@@ -183,13 +177,12 @@ final class EthereumProviderTests: XCTestCase {
       value: .zero,
       data: Data()
     )
-    let request = provider.estimateGasRequest(transaction: tx)
+    let request = EthereumRequestBuilder.estimateGasRequest(transaction: tx)
 
     XCTAssertEqual(request.method, "eth_estimateGas")
   }
 
   func testCallRequest() {
-    let provider = EthereumProvider(chain: .mainnet)
     let tx = EthereumTransaction(
       chainId: 1,
       nonce: 0,
@@ -200,7 +193,7 @@ final class EthereumProviderTests: XCTestCase {
       value: .zero,
       data: Data([0xa9, 0x05, 0x9c, 0xbb])
     )
-    let request = provider.callRequest(transaction: tx, block: .latest)
+    let request = EthereumRequestBuilder.callRequest(transaction: tx, block: .latest)
 
     XCTAssertEqual(request.method, "eth_call")
   }
@@ -241,7 +234,7 @@ final class EthereumProviderMockTests: XCTestCase {
     MockURLProtocol.setJsonResponse("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0x1234\"}")
 
     let provider = EthereumProvider(chain: .mainnet, session: session)
-    let result: String = try await provider.send(request: provider.blockNumberRequest())
+    let result: String = try await provider.send(request: EthereumRequestBuilder.blockNumberRequest())
 
     XCTAssertEqual(result, "0x1234")
   }
@@ -260,12 +253,12 @@ final class EthereumProviderAnvilTests: XCTestCase {
   }
 
   func testChainIdRequest() async throws {
-    let result: String = try await provider.send(request: provider.chainIdRequest())
+    let result: String = try await provider.send(request: EthereumRequestBuilder.chainIdRequest())
     XCTAssertEqual(result, "0x7a69")  // 31337
   }
 
   func testBlockNumberRequest() async throws {
-    let result: String = try await provider.send(request: provider.blockNumberRequest())
+    let result: String = try await provider.send(request: EthereumRequestBuilder.blockNumberRequest())
     XCTAssertNotNil(result)
   }
 }

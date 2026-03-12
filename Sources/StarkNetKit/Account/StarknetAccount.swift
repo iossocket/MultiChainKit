@@ -170,7 +170,7 @@ public struct StarknetAccount: SignableAccount, Sendable {
     let p = try requireProvider()
     let tx = buildInvokeV3(calls: calls, resourceBounds: resourceBounds, nonce: nonce)
     let signed = try signInvokeV3(tx)
-    let request = p.estimateFeeRequest(invokeV3: signed)
+    let request = StarknetRequestBuilder.estimateFeeRequest(invokeV3: signed)
     let results: [StarknetFeeEstimate] = try await p.send(request: request)
     guard let estimate = results.first else {
       throw StarknetAccountError.emptyFeeEstimate
@@ -190,7 +190,7 @@ public struct StarknetAccount: SignableAccount, Sendable {
     let p = try requireProvider()
     let tx = buildInvokeV3(calls: calls, resourceBounds: resourceBounds, nonce: nonce)
     let signed = try signInvokeV3(tx)
-    let request = p.addInvokeTransactionRequest(invokeV3: signed)
+    let request = StarknetRequestBuilder.addInvokeTransactionRequest(invokeV3: signed)
     return try await p.send(request: request)
   }
 
@@ -205,7 +205,7 @@ public struct StarknetAccount: SignableAccount, Sendable {
 
     // Get nonce
     let nonceHex: String = try await p.send(
-      request: p.getNonceRequest(address: address))
+      request: StarknetRequestBuilder.getNonceRequest(address: address))
     guard let nonce = Felt(nonceHex) else {
       throw ChainError.invalidTransaction("Cannot parse nonce: \(nonceHex)")
     }

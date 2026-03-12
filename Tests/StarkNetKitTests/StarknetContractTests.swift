@@ -377,7 +377,7 @@ struct StarknetContractEncodeCallTests {
       address: Felt(0xABC), abiJson: erc20ABI, provider: Self.provider)
     let call = try contract.encodeCall(
       function: "balance_of", args: [.contractAddress(Felt(0xFACE))])
-    let request = Self.provider.callRequest(call: call)
+    let request = StarknetRequestBuilder.callRequest(call: call)
     #expect(request.method == "starknet_call")
   }
 

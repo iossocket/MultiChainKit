@@ -9,26 +9,25 @@ import XCTest
 
 final class ProviderMethodsTests: XCTestCase {
 
-  let provider = EthereumProvider(chain: .mainnet)
   let testAddress = EthereumAddress("0x742d35Cc6634C0532925a3b844Bc9e7595f5bE91")!
 
   // MARK: - eth_getBalance
 
   func testGetBalanceRequest() {
-    let request = provider.getBalanceRequest(address: testAddress, block: .latest)
+    let request = EthereumRequestBuilder.getBalanceRequest(address: testAddress, block: .latest)
 
     XCTAssertEqual(request.method, "eth_getBalance")
     XCTAssertEqual(request.params.count, 2)
   }
 
   func testGetBalanceRequestWithPendingBlock() {
-    let request = provider.getBalanceRequest(address: testAddress, block: .pending)
+    let request = EthereumRequestBuilder.getBalanceRequest(address: testAddress, block: .pending)
 
     XCTAssertEqual(request.method, "eth_getBalance")
   }
 
   func testGetBalanceRequestWithBlockNumber() {
-    let request = provider.getBalanceRequest(address: testAddress, block: .number(12_345_678))
+    let request = EthereumRequestBuilder.getBalanceRequest(address: testAddress, block: .number(12_345_678))
 
     XCTAssertEqual(request.method, "eth_getBalance")
   }
@@ -36,14 +35,14 @@ final class ProviderMethodsTests: XCTestCase {
   // MARK: - eth_getTransactionCount (nonce)
 
   func testGetTransactionCountRequest() {
-    let request = provider.getTransactionCountRequest(address: testAddress, block: .latest)
+    let request = EthereumRequestBuilder.getTransactionCountRequest(address: testAddress, block: .latest)
 
     XCTAssertEqual(request.method, "eth_getTransactionCount")
     XCTAssertEqual(request.params.count, 2)
   }
 
   func testGetTransactionCountRequestWithPendingBlock() {
-    let request = provider.getTransactionCountRequest(address: testAddress, block: .pending)
+    let request = EthereumRequestBuilder.getTransactionCountRequest(address: testAddress, block: .pending)
 
     XCTAssertEqual(request.method, "eth_getTransactionCount")
   }
@@ -51,7 +50,7 @@ final class ProviderMethodsTests: XCTestCase {
   // MARK: - eth_getCode
 
   func testGetCodeRequest() {
-    let request = provider.getCodeRequest(address: testAddress, block: .latest)
+    let request = EthereumRequestBuilder.getCodeRequest(address: testAddress, block: .latest)
 
     XCTAssertEqual(request.method, "eth_getCode")
     XCTAssertEqual(request.params.count, 2)
@@ -61,7 +60,7 @@ final class ProviderMethodsTests: XCTestCase {
 
   func testGetStorageAtRequest() {
     let position = "0x0"
-    let request = provider.getStorageAtRequest(
+    let request = EthereumRequestBuilder.getStorageAtRequest(
       address: testAddress, position: position, block: .latest)
 
     XCTAssertEqual(request.method, "eth_getStorageAt")
@@ -71,14 +70,14 @@ final class ProviderMethodsTests: XCTestCase {
   // MARK: - eth_getBlockByNumber
 
   func testGetBlockByNumberRequest() {
-    let request = provider.getBlockByNumberRequest(block: .latest, fullTransactions: false)
+    let request = EthereumRequestBuilder.getBlockByNumberRequest(block: .latest, fullTransactions: false)
 
     XCTAssertEqual(request.method, "eth_getBlockByNumber")
     XCTAssertEqual(request.params.count, 2)
   }
 
   func testGetBlockByNumberRequestWithFullTransactions() {
-    let request = provider.getBlockByNumberRequest(
+    let request = EthereumRequestBuilder.getBlockByNumberRequest(
       block: .number(12_345_678), fullTransactions: true)
 
     XCTAssertEqual(request.method, "eth_getBlockByNumber")
@@ -88,7 +87,7 @@ final class ProviderMethodsTests: XCTestCase {
 
   func testGetTransactionByHashRequest() {
     let txHash = "0x" + String(repeating: "ab", count: 32)
-    let request = provider.getTransactionByHashRequest(hash: txHash)
+    let request = EthereumRequestBuilder.getTransactionByHashRequest(hash: txHash)
 
     XCTAssertEqual(request.method, "eth_getTransactionByHash")
     XCTAssertEqual(request.params.count, 1)
@@ -97,7 +96,7 @@ final class ProviderMethodsTests: XCTestCase {
   // MARK: - eth_feeHistory (EIP-1559)
 
   func testFeeHistoryRequest() {
-    let request = provider.feeHistoryRequest(
+    let request = EthereumRequestBuilder.feeHistoryRequest(
       blockCount: 4, newestBlock: .latest, rewardPercentiles: [25, 50, 75])
 
     XCTAssertEqual(request.method, "eth_feeHistory")
@@ -107,7 +106,7 @@ final class ProviderMethodsTests: XCTestCase {
   // MARK: - eth_maxPriorityFeePerGas (EIP-1559)
 
   func testMaxPriorityFeePerGasRequest() {
-    let request = provider.maxPriorityFeePerGasRequest()
+    let request = EthereumRequestBuilder.maxPriorityFeePerGasRequest()
 
     XCTAssertEqual(request.method, "eth_maxPriorityFeePerGas")
     XCTAssertEqual(request.params.count, 0)
@@ -134,7 +133,7 @@ final class ProviderMethodsMockTests: XCTestCase {
     let provider = EthereumProvider(chain: .mainnet, session: session)
     let address = EthereumAddress("0x742d35Cc6634C0532925a3b844Bc9e7595f5bE91")!
     let result: String = try await provider.send(
-      request: provider.getBalanceRequest(address: address, block: .latest))
+      request: EthereumRequestBuilder.getBalanceRequest(address: address, block: .latest))
 
     XCTAssertEqual(result, "0xde0b6b3a7640000")
   }
@@ -149,7 +148,7 @@ final class ProviderMethodsMockTests: XCTestCase {
     let provider = EthereumProvider(chain: .mainnet, session: session)
     let address = EthereumAddress("0x742d35Cc6634C0532925a3b844Bc9e7595f5bE91")!
     let result: String = try await provider.send(
-      request: provider.getTransactionCountRequest(address: address, block: .latest))
+      request: EthereumRequestBuilder.getTransactionCountRequest(address: address, block: .latest))
 
     XCTAssertEqual(result, "0x5")
   }
@@ -166,7 +165,7 @@ final class ProviderMethodsMockTests: XCTestCase {
 
     let provider = EthereumProvider(chain: .mainnet, session: session)
     let result: FeeHistory = try await provider.send(
-      request: provider.feeHistoryRequest(
+      request: EthereumRequestBuilder.feeHistoryRequest(
         blockCount: 1, newestBlock: .latest, rewardPercentiles: [50]))
 
     XCTAssertEqual(result.oldestBlock, "0x1234")
@@ -193,7 +192,7 @@ final class ProviderMethodsAnvilTests: XCTestCase {
 
   func testGetBalance() async throws {
     let result: String = try await provider.send(
-      request: provider.getBalanceRequest(address: anvilAddress, block: .latest))
+      request: EthereumRequestBuilder.getBalanceRequest(address: anvilAddress, block: .latest))
 
     // Anvil default accounts have 10000 ETH
     XCTAssertTrue(result.hasPrefix("0x"))
@@ -201,7 +200,7 @@ final class ProviderMethodsAnvilTests: XCTestCase {
 
   func testGetTransactionCount() async throws {
     let result: String = try await provider.send(
-      request: provider.getTransactionCountRequest(address: anvilAddress, block: .latest))
+      request: EthereumRequestBuilder.getTransactionCountRequest(address: anvilAddress, block: .latest))
 
     XCTAssertNotNil(result)
   }
@@ -209,20 +208,20 @@ final class ProviderMethodsAnvilTests: XCTestCase {
   func testGetCode() async throws {
     // EOA has no code
     let result: String = try await provider.send(
-      request: provider.getCodeRequest(address: anvilAddress, block: .latest))
+      request: EthereumRequestBuilder.getCodeRequest(address: anvilAddress, block: .latest))
 
     XCTAssertEqual(result, "0x")
   }
 
   func testGetBlockByNumber() async throws {
     let result: EthereumBlock = try await provider.send(
-      request: provider.getBlockByNumberRequest(block: .latest, fullTransactions: false))
+      request: EthereumRequestBuilder.getBlockByNumberRequest(block: .latest, fullTransactions: false))
 
     XCTAssertNotNil(result.number)
   }
 
   func testMaxPriorityFeePerGas() async throws {
-    let result: String = try await provider.send(request: provider.maxPriorityFeePerGasRequest())
+    let result: String = try await provider.send(request: EthereumRequestBuilder.maxPriorityFeePerGasRequest())
 
     XCTAssertTrue(result.hasPrefix("0x"))
   }

@@ -19,109 +19,6 @@ public final class StarknetProvider: JsonRpcProvider, Sendable {
     self.session = session
   }
 
-  // MARK: - Chain State
-
-  public func chainIdRequest() -> ChainRequest {
-    ChainRequest(method: "starknet_chainId")
-  }
-
-  public func blockNumberRequest() -> ChainRequest {
-    ChainRequest(method: "starknet_blockNumber")
-  }
-
-  public func blockHashAndNumberRequest() -> ChainRequest {
-    ChainRequest(method: "starknet_blockHashAndNumber")
-  }
-
-  public func syncing() -> ChainRequest {
-    ChainRequest(method: "starknet_syncing")
-  }
-
-  // MARK: - Account State
-
-  public func getNonceRequest(address: StarknetAddress, block: StarknetBlockId = .latest)
-    -> ChainRequest
-  {
-    ChainRequest(method: "starknet_getNonce", params: [block, address.checksummed])
-  }
-
-  public func getClassHashAtRequest(address: StarknetAddress, block: StarknetBlockId = .latest)
-    -> ChainRequest
-  {
-    ChainRequest(method: "starknet_getClassHashAt", params: [block, address.checksummed])
-  }
-
-  // MARK: - Contract Calls
-
-  public func callRequest(call: StarknetCall, block: StarknetBlockId = .latest) -> ChainRequest {
-    let callObj = StarknetCallParam(
-      contractAddress: call.contractAddress.hexString,
-      entryPointSelector: call.entryPointSelector.hexString,
-      calldata: call.calldata.map { $0.hexString }
-    )
-    return ChainRequest(method: "starknet_call", params: [callObj, block])
-  }
-
-  // MARK: - Fee Estimation
-
-  public func estimateFeeRequest(invokeV1: StarknetInvokeV1) -> ChainRequest {
-    let tx = StarknetInvokeV1Param(tx: invokeV1)
-    let txArray = [tx] as [StarknetInvokeV1Param]
-    let simFlags = ["SKIP_VALIDATE"] as [String]
-    return ChainRequest(method: "starknet_estimateFee", params: [txArray, simFlags])
-  }
-
-  public func estimateFeeRequest(invokeV3: StarknetInvokeV3) -> ChainRequest {
-    let tx = StarknetInvokeV3Param(tx: invokeV3)
-    let txArray = [tx] as [StarknetInvokeV3Param]
-    let simFlags = ["SKIP_VALIDATE"] as [String]
-    return ChainRequest(method: "starknet_estimateFee", params: [txArray, simFlags])
-  }
-
-  // MARK: - Send Transactions
-
-  public func addInvokeTransactionRequest(invokeV1: StarknetInvokeV1) -> ChainRequest {
-    let tx = StarknetInvokeV1Param(tx: invokeV1)
-    return ChainRequest(method: "starknet_addInvokeTransaction", params: [tx])
-  }
-
-  public func addInvokeTransactionRequest(invokeV3: StarknetInvokeV3) -> ChainRequest {
-    let tx = StarknetInvokeV3Param(tx: invokeV3)
-    return ChainRequest(method: "starknet_addInvokeTransaction", params: [tx])
-  }
-
-  public func addDeployAccountTransactionRequest(deployV1: StarknetDeployAccountV1) -> ChainRequest
-  {
-    let tx = StarknetDeployAccountV1Param(tx: deployV1)
-    return ChainRequest(method: "starknet_addDeployAccountTransaction", params: [tx])
-  }
-
-  public func addDeployAccountTransactionRequest(deployV3: StarknetDeployAccountV3) -> ChainRequest
-  {
-    let tx = StarknetDeployAccountV3Param(tx: deployV3)
-    return ChainRequest(method: "starknet_addDeployAccountTransaction", params: [tx])
-  }
-
-  // MARK: - Events
-
-  public func getEventsRequest(filter: StarknetEventFilter) -> ChainRequest {
-    ChainRequest(method: "starknet_getEvents", params: [filter])
-  }
-
-  // MARK: - Transaction Queries
-
-  public func getTransactionByHashRequest(hash: Felt) -> ChainRequest {
-    ChainRequest(method: "starknet_getTransactionByHash", params: [hash.hexString])
-  }
-
-  public func getTransactionReceiptRequest(hash: Felt) -> ChainRequest {
-    ChainRequest(method: "starknet_getTransactionReceipt", params: [hash.hexString])
-  }
-
-  public func getTransactionStatusRequest(hash: Felt) -> ChainRequest {
-    ChainRequest(method: "starknet_getTransactionStatus", params: [hash.hexString])
-  }
-
   // MARK: - Wait For Transaction
 
   /// Poll until a transaction is accepted, then return the full receipt.
@@ -136,7 +33,7 @@ public final class StarknetProvider: JsonRpcProvider, Sendable {
       // Poll status — RPC error means tx not yet in mempool, just retry
       let status: StarknetTransactionStatus
       do {
-        status = try await send(request: getTransactionStatusRequest(hash: hash))
+        status = try await send(request: StarknetRequestBuilder.getTransactionStatusRequest(hash: hash))
       } catch let error as ProviderError {
         if case .rpcError = error {
           try await Task.sleep(nanoseconds: sleepNanos)
@@ -153,7 +50,7 @@ public final class StarknetProvider: JsonRpcProvider, Sendable {
           reason: status.failureReason ?? "REVERTED", txHash: hash.hexString)
       }
       if status.isAccepted {
-        return try await send(request: getTransactionReceiptRequest(hash: hash))
+        return try await send(request: StarknetRequestBuilder.getTransactionReceiptRequest(hash: hash))
       }
 
       // RECEIVED or other — keep polling

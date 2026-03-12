@@ -190,12 +190,12 @@ final class AccountSigningAnvilTests: XCTestCase {
 
     // 1. Get nonce
     let nonceHex: String = try await provider.send(
-      request: provider.getTransactionCountRequest(address: account.address, block: .pending)
+      request: EthereumRequestBuilder.getTransactionCountRequest(address: account.address, block: .pending)
     )
     let nonce = UInt64(nonceHex.dropFirst(2), radix: 16) ?? 0
 
     // 2. Get gas price
-    let gasPriceHex: String = try await provider.send(request: provider.gasPriceRequest())
+    let gasPriceHex: String = try await provider.send(request: EthereumRequestBuilder.gasPriceRequest())
     let gasPrice = Wei(gasPriceHex) ?? .zero
 
     // 3. Create and sign transaction
@@ -217,7 +217,7 @@ final class AccountSigningAnvilTests: XCTestCase {
     }
 
     let txHash: String = try await provider.send(
-      request: provider.sendRawTransactionRequest(rawTx)
+      request: EthereumRequestBuilder.sendRawTransactionRequest(rawTx)
     )
     XCTAssertTrue(txHash.hasPrefix("0x"))
 
@@ -225,7 +225,7 @@ final class AccountSigningAnvilTests: XCTestCase {
     try await Task.sleep(nanoseconds: 1_000_000_000)
 
     let receipt: EthereumReceipt = try await provider.send(
-      request: provider.transactionReceiptRequest(hash: txHash)
+      request: EthereumRequestBuilder.transactionReceiptRequest(hash: txHash)
     )
     XCTAssertTrue(receipt.isSuccess)
   }

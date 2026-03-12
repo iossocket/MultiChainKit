@@ -74,8 +74,7 @@ final class EthereumWaitForTransactionTests: XCTestCase {
   }
 
   func testWaitForTransactionRequestExists() {
-    let provider = EthereumProvider(chain: .mainnet)
-    let req = provider.transactionReceiptRequest(hash: "0x" + String(repeating: "ab", count: 32))
+    let req = EthereumRequestBuilder.transactionReceiptRequest(hash: "0x" + String(repeating: "ab", count: 32))
     XCTAssertEqual(req.method, "eth_getTransactionReceipt")
   }
 }

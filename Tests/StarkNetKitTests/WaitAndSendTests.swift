@@ -104,8 +104,7 @@ struct StarknetWaitForTransactionTests {
 
   @Test("getTransactionStatus request exists")
   func statusRequest() {
-    let provider = StarknetProvider(chain: .sepolia)
-    let req = provider.getTransactionStatusRequest(hash: Felt(0xabc))
+    let req = StarknetRequestBuilder.getTransactionStatusRequest(hash: Felt(0xabc))
     #expect(req.method == "starknet_getTransactionStatus")
   }
 }

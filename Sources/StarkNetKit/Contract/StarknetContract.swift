@@ -96,7 +96,7 @@ public struct StarknetContract: Sendable {
     block: StarknetBlockId = .latest
   ) async throws -> [Felt] {
     let call = try encodeCall(function: name, args: args)
-    let request = provider.callRequest(call: call, block: block)
+    let request = StarknetRequestBuilder.callRequest(call: call, block: block)
     return try await provider.send(request: request)
   }
 
@@ -172,7 +172,7 @@ public struct StarknetContract: Sendable {
     )
 
     let response: StarknetEventsResponse = try await provider.send(
-      request: provider.getEventsRequest(filter: filter)
+      request: StarknetRequestBuilder.getEventsRequest(filter: filter)
     )
 
     let decoded = try response.events.map { raw in
