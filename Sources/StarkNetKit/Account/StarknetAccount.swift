@@ -55,6 +55,23 @@ public struct StarknetAccount: Account, Sendable {
     try self.init(privateKey: key, address: address, chain: chain, provider: provider)
   }
 
+  /// Create account with auto-derived address from private key + account type.
+  public init(
+    privateKey: Felt,
+    accountType: any StarknetAccountType = OpenZeppelinAccount(),
+    chain: Starknet,
+    provider: (any Provider<Starknet>)? = nil
+  ) throws {
+    guard privateKey != .zero else {
+      throw StarkCurveError.invalidPrivateKey
+    }
+    guard let publicKey = try? StarkCurve.getPublicKey(privateKey: privateKey) else {
+      throw SignerError.publicKeyDerivationFailed
+    }
+    let address = try accountType.computeAddress(publicKey: publicKey, salt: publicKey)
+    try self.init(privateKey: privateKey, address: address, chain: chain, provider: provider)
+  }
+
   /// The sender address as Felt (for transaction building).
   public var addressFelt: Felt { Felt(address.data) }
 

@@ -73,6 +73,68 @@ struct OpenZeppelinAccountTests {
   }
 }
 
+// MARK: - ArgentAccount (for deploy)
+
+@Suite("ArgentAccount")
+struct ArgentAccountTests {
+
+  @Test("Default class hash matches Argent v0.4.0")
+  func classHash() {
+    let argent = ArgentAccount()
+    #expect(argent.classHash == ArgentAccount.defaultClassHash)
+  }
+
+  @Test("Custom class hash")
+  func customClassHash() {
+    let custom = Felt(0xabc)
+    let argent = ArgentAccount(classHash: custom)
+    #expect(argent.classHash == custom)
+  }
+
+  @Test("Constructor calldata is [0, publicKey, 1]")
+  func constructorCalldata() {
+    let argent = ArgentAccount()
+    let pubKey = Felt(0x12345)
+    let calldata = argent.constructorCalldata(publicKey: pubKey)
+    #expect(calldata == [Felt.zero, pubKey, Felt(1)])
+  }
+
+  @Test("Compute address is deterministic")
+  func addressDeterministic() throws {
+    let argent = ArgentAccount()
+    let pubKey = Felt(0x12345)
+    let salt = pubKey
+    let addr1 = try argent.computeAddress(publicKey: pubKey, salt: salt)
+    let addr2 = try argent.computeAddress(publicKey: pubKey, salt: salt)
+    #expect(addr1 == addr2)
+  }
+
+  @Test("Address differs from OpenZeppelin for same key")
+  func addressDiffersFromOZ() throws {
+    let pubKey = Felt(0x12345)
+    let salt = pubKey
+    let ozAddr = try OpenZeppelinAccount().computeAddress(publicKey: pubKey, salt: salt)
+    let argentAddr = try ArgentAccount().computeAddress(publicKey: pubKey, salt: salt)
+    #expect(ozAddr != argentAddr)
+  }
+
+  @Test("Address matches manual contract address calculation")
+  func addressMatchesManual() throws {
+    let argent = ArgentAccount()
+    let pubKey = Felt(0xabc)
+    let salt = pubKey
+    let addr = try argent.computeAddress(publicKey: pubKey, salt: salt)
+
+    let felt = try StarknetContractAddress.calculate(
+      classHash: argent.classHash,
+      calldata: [Felt.zero, pubKey, Felt(1)],
+      salt: salt,
+      deployerAddress: .zero
+    )
+    #expect(addr == StarknetAddress(felt.bigEndianData))
+  }
+}
+
 // MARK: - StarknetAccount (control existing accounts)
 
 @Suite("StarknetAccount")
@@ -351,6 +413,44 @@ struct StarknetAccountTests {
   func providerNilByDefault() throws {
     let account = try makeAccount()
     #expect(account.provider == nil)
+  }
+
+  // MARK: - Init with accountType
+
+  @Test("init with accountType derives address from private key")
+  func initWithAccountType() throws {
+    let pk = Felt("0x0229d44730456bc33d23f18e19c8ae04bcb08e5630eb0411cabc70c8f4b517a8")!
+    let expectedPubKey = Felt("0x07e2b833a71338a56edfdbaf2a32aa5e9fae3fe16a79eec8e3fdd8dc02a1b977")!
+    let expectedAddress = StarknetAddress(
+      "0x013b8272E85850C5AE61012089001391161651ae6f523B0Eeeb89f2F21aDfbee")!
+
+    let account = try StarknetAccount(
+      privateKey: pk, accountType: ArgentAccount(), chain: .mainnet)
+
+    #expect(account.publicKeyFelt == expectedPubKey)
+    #expect(account.address == expectedAddress)
+  }
+
+  @Test("init with accountType defaults to OpenZeppelin")
+  func initWithAccountTypeDefaultOZ() throws {
+    let pk = Felt("0x0229d44730456bc33d23f18e19c8ae04bcb08e5630eb0411cabc70c8f4b517a8")!
+    let pubKey = Felt("0x07e2b833a71338a56edfdbaf2a32aa5e9fae3fe16a79eec8e3fdd8dc02a1b977")!
+
+    let account = try StarknetAccount(privateKey: pk, chain: .mainnet)
+    let expectedAddr = try OpenZeppelinAccount().computeAddress(publicKey: pubKey, salt: pubKey)
+
+    #expect(account.address == expectedAddr)
+  }
+
+  @Test("init with accountType: Argent vs OZ produce different addresses")
+  func initArgentVsOZDifferentAddress() throws {
+    let pk = Felt("0x0229d44730456bc33d23f18e19c8ae04bcb08e5630eb0411cabc70c8f4b517a8")!
+
+    let ozAccount = try StarknetAccount(privateKey: pk, chain: .mainnet)
+    let argentAccount = try StarknetAccount(
+      privateKey: pk, accountType: ArgentAccount(), chain: .mainnet)
+
+    #expect(ozAccount.address != argentAccount.address)
   }
 }
 

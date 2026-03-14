@@ -58,3 +58,23 @@ public struct OpenZeppelinAccount: StarknetAccountType {
     [publicKey]
   }
 }
+
+// MARK: - Argent
+
+/// Argent X account contract (v0.4.0). Constructor: [owner_variant, pubkey, guardian_variant]
+public struct ArgentAccount: StarknetAccountType {
+  public let classHash: Felt
+
+  /// Argent X account class hash (v0.4.0).
+  public static let defaultClassHash = Felt(
+    "0x036078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f")!
+
+  public init(classHash: Felt = ArgentAccount.defaultClassHash) {
+    self.classHash = classHash
+  }
+
+  /// Calldata: [0 (Starknet signer variant), publicKey, 1 (guardian = None)]
+  public func constructorCalldata(publicKey: Felt) -> [Felt] {
+    [Felt.zero, publicKey, Felt(1)]
+  }
+}
