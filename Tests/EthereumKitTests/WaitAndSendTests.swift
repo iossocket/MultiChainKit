@@ -79,39 +79,38 @@ final class EthereumWaitForTransactionTests: XCTestCase {
   }
 }
 
-// MARK: - EthereumSignableAccount Provider Tests
+// MARK: - EthereumAccount Provider Tests
 
-final class EthereumSignableAccountProviderTests: XCTestCase {
+final class EthereumAccountProviderTests: XCTestCase {
 
   let testPrivateKey = Data(
     hex: "4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318")!
 
   func testInitWithoutProvider() throws {
-    let account = try EthereumSignableAccount(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
     XCTAssertNil(account.provider)
   }
 
   func testInitWithProvider() throws {
     let provider = EthereumProvider(chain: .mainnet)
-    let account = try EthereumSignableAccount(privateKey: testPrivateKey, provider: provider)
+    let account = try EthereumAccount(privateKey: testPrivateKey, provider: provider)
     XCTAssertNotNil(account.provider)
   }
 
-  func testInitFromSignerWithProvider() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+  func testInitWithProviderFromPrivateKey() throws {
     let provider = EthereumProvider(chain: .mainnet)
-    let account = try EthereumSignableAccount(signer, provider: provider)
+    let account = try EthereumAccount(privateKey: testPrivateKey, provider: provider)
     XCTAssertNotNil(account.provider)
   }
 
   func testPrepareTransactionSignatureCompiles() {
     // Verify the method signature exists
-    let account = try! EthereumSignableAccount(privateKey: testPrivateKey)
+    let account = try! EthereumAccount(privateKey: testPrivateKey)
     _ = type(of: account).prepareTransaction
   }
 
   func testSendTransactionSignatureCompiles() {
-    let account = try! EthereumSignableAccount(privateKey: testPrivateKey)
+    let account = try! EthereumAccount(privateKey: testPrivateKey)
     _ = type(of: account).sendTransaction
   }
 }

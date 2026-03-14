@@ -5,27 +5,15 @@
 
 import Foundation
 
-// MARK: - Signer
-
-/// Creates digital signatures using a private key.
-public protocol Signer<C>: Sendable {
-  associatedtype C: Chain
-
-  var publicKey: Data? { get }
-  func sign(hash: Data) throws -> C.Signature
-}
-
-// MARK: - PrivateKeySigner
-
 /// Signer initialized from raw private key bytes.
-public protocol PrivateKeySigner: Signer {
+public protocol PrivateKeySigner {
   init(privateKey: Data) throws
 }
 
 // MARK: - MnemonicSigner
 
 /// Signer that derives key from BIP39 mnemonic.
-public protocol MnemonicSigner: Signer {
+public protocol MnemonicSigner {
   init(mnemonic: String, path: DerivationPath) throws
 }
 

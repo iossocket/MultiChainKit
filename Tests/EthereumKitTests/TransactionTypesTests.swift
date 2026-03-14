@@ -56,7 +56,7 @@ final class TransactionTypesTests: XCTestCase {
   }
 
   func testLegacyTransactionSigning() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
 
     var tx = EthereumTransaction.legacy(
       chainId: 1,
@@ -67,7 +67,7 @@ final class TransactionTypesTests: XCTestCase {
       value: Wei.fromEther(1)
     )
 
-    tx = try tx.signed(with: signer)
+    tx = try tx.signed(with: account)
 
     XCTAssertNotNil(tx.signature)
     XCTAssertNotNil(tx.hash)
@@ -78,7 +78,7 @@ final class TransactionTypesTests: XCTestCase {
   }
 
   func testLegacyVValue() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
 
     var tx = EthereumTransaction.legacy(
       chainId: 1,
@@ -89,7 +89,7 @@ final class TransactionTypesTests: XCTestCase {
       value: Wei(0)
     )
 
-    tx = try tx.signed(with: signer)
+    tx = try tx.signed(with: account)
 
     // Legacy v = chainId * 2 + 35 + recoveryId
     // For chainId=1: v should be 37 or 38
@@ -156,7 +156,7 @@ final class TransactionTypesTests: XCTestCase {
   }
 
   func testEIP2930TransactionSigning() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
 
     let accessList = [
       AccessListEntry(
@@ -175,7 +175,7 @@ final class TransactionTypesTests: XCTestCase {
       accessList: accessList
     )
 
-    tx = try tx.signed(with: signer)
+    tx = try tx.signed(with: account)
 
     XCTAssertNotNil(tx.signature)
     XCTAssertNotNil(tx.hash)
@@ -223,7 +223,7 @@ final class TransactionTypesTests: XCTestCase {
   }
 
   func testEIP1559TransactionSigning() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
 
     var tx = EthereumTransaction.eip1559(
       chainId: 1,
@@ -235,7 +235,7 @@ final class TransactionTypesTests: XCTestCase {
       value: Wei(0)
     )
 
-    tx = try tx.signed(with: signer)
+    tx = try tx.signed(with: account)
 
     XCTAssertNotNil(tx.signature)
     XCTAssertNotNil(tx.hash)
@@ -246,7 +246,7 @@ final class TransactionTypesTests: XCTestCase {
   }
 
   func testEIP1559WithAccessList() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
 
     let accessList = [
       AccessListEntry(
@@ -269,7 +269,7 @@ final class TransactionTypesTests: XCTestCase {
       accessList: accessList
     )
 
-    tx = try tx.signed(with: signer)
+    tx = try tx.signed(with: account)
 
     XCTAssertNotNil(tx.signature)
     XCTAssertEqual(tx.accessList.count, 1)
@@ -279,7 +279,7 @@ final class TransactionTypesTests: XCTestCase {
   // MARK: - Contract Creation
 
   func testLegacyContractCreation() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
 
     // Contract creation has nil `to`
     var tx = EthereumTransaction.legacy(
@@ -292,7 +292,7 @@ final class TransactionTypesTests: XCTestCase {
       data: Data(hex: "6080604052")  // Simple contract bytecode
     )
 
-    tx = try tx.signed(with: signer)
+    tx = try tx.signed(with: account)
 
     XCTAssertNil(tx.to)
     XCTAssertNotNil(tx.signature)
@@ -300,7 +300,7 @@ final class TransactionTypesTests: XCTestCase {
   }
 
   func testEIP1559ContractCreation() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
 
     var tx = EthereumTransaction.eip1559(
       chainId: 1,
@@ -313,7 +313,7 @@ final class TransactionTypesTests: XCTestCase {
       data: Data(hex: "6080604052")
     )
 
-    tx = try tx.signed(with: signer)
+    tx = try tx.signed(with: account)
 
     XCTAssertNil(tx.to)
     XCTAssertNotNil(tx.signature)
@@ -322,7 +322,7 @@ final class TransactionTypesTests: XCTestCase {
   // MARK: - Hash Consistency
 
   func testTransactionHashConsistency() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
 
     var tx = EthereumTransaction.eip1559(
       chainId: 1,
@@ -334,7 +334,7 @@ final class TransactionTypesTests: XCTestCase {
       value: Wei.fromGwei(1000)
     )
 
-    tx = try tx.signed(with: signer)
+    tx = try tx.signed(with: account)
 
     let hash1 = tx.hash
     let hash2 = tx.hash
@@ -346,7 +346,7 @@ final class TransactionTypesTests: XCTestCase {
   // MARK: - Different Chain IDs
 
   func testLegacyDifferentChainIds() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
 
     // Mainnet (chainId = 1)
     var txMainnet = EthereumTransaction.legacy(
@@ -357,7 +357,7 @@ final class TransactionTypesTests: XCTestCase {
       to: EthereumAddress("0x3535353535353535353535353535353535353535"),
       value: Wei(0)
     )
-    txMainnet = try txMainnet.signed(with: signer)
+    txMainnet = try txMainnet.signed(with: account)
 
     // Sepolia (chainId = 11155111)
     var txSepolia = EthereumTransaction.legacy(
@@ -368,7 +368,7 @@ final class TransactionTypesTests: XCTestCase {
       to: EthereumAddress("0x3535353535353535353535353535353535353535"),
       value: Wei(0)
     )
-    txSepolia = try txSepolia.signed(with: signer)
+    txSepolia = try txSepolia.signed(with: account)
 
     // Different chain IDs should produce different hashes
     XCTAssertNotEqual(txMainnet.hash, txSepolia.hash)

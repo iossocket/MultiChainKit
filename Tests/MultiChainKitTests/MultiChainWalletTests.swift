@@ -21,10 +21,10 @@ struct MultiChainWalletTests {
     #expect(wallet.starknet.address != .zero)
   }
 
-  @Test("Ethereum address matches direct EthereumSignableAccount")
+  @Test("Ethereum address matches direct EthereumAccount")
   func ethereumAddressMatchesDirect() throws {
     let wallet = try MultiChainWallet(mnemonic: testMnemonic)
-    let direct = try EthereumSignableAccount(mnemonic: testMnemonic, path: .ethereum)
+    let direct = try EthereumAccount(mnemonic: testMnemonic, path: .ethereum)
     #expect(wallet.ethereum.address == direct.address)
   }
 
@@ -39,8 +39,9 @@ struct MultiChainWalletTests {
   func starknetAddressMatchesManual() throws {
     let wallet = try MultiChainWallet(mnemonic: testMnemonic)
 
-    let signer = try StarknetSigner(mnemonic: testMnemonic, path: .starknet)
-    let pubKey = signer.publicKeyFelt!
+    let seed = try BIP39.seed(from: testMnemonic, password: "")
+    let key = try StarknetKeyDerivation.derivePrivateKey(seed: seed, path: .starknet)
+    let pubKey = try Felt(StarkCurve.getPublicKey(privateKey: key).bigEndianData)
     let address = try OpenZeppelinAccount().computeAddress(publicKey: pubKey, salt: pubKey)
 
     #expect(wallet.starknet.address == address)
@@ -53,7 +54,7 @@ struct MultiChainWalletTests {
     #expect(wallet.starknet.provider == nil)
 
     let provider = StarknetProvider(chain: .sepolia)
-    wallet.connectStarknet(provider: provider)
+    try wallet.connectStarknet(provider: provider)
 
     #expect(wallet.starknet.provider != nil)
     #expect(wallet.starknet.address == addressBefore)
@@ -108,14 +109,21 @@ struct StarknetKeyDerivationTests {
     #expect(key1 == key2)
   }
 
-  @Test("StarknetSigner mnemonic init produces same key as manual derivation")
-  func signerMnemonicMatchesManual() throws {
-    let signer = try StarknetSigner(mnemonic: testMnemonic, path: .starknet)
-
+  @Test("StarknetAccount mnemonic init produces same key as manual derivation")
+  func accountMnemonicMatchesManual() throws {
     let seed = try BIP39.seed(from: testMnemonic, password: "")
     let key = try StarknetKeyDerivation.derivePrivateKey(seed: seed, path: .starknet)
-    let manualSigner = try StarknetSigner(privateKey: key)
+    let pubKey = try Felt(StarkCurve.getPublicKey(privateKey: key).bigEndianData)
+    let address = try OpenZeppelinAccount().computeAddress(publicKey: pubKey, salt: pubKey)
 
-    #expect(signer.publicKey == manualSigner.publicKey)
+    let account = try StarknetAccount(
+      mnemonic: testMnemonic, path: .starknet, address: address, chain: .sepolia
+    )
+
+    let manualAccount = try StarknetAccount(
+      privateKey: key, address: address, chain: .sepolia
+    )
+
+    #expect(account.publicKey == manualAccount.publicKey)
   }
 }

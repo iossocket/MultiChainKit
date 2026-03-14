@@ -9,14 +9,14 @@ extension EthereumTransaction {
 
   // MARK: - Sign
 
-  public mutating func sign(with signer: EthereumSigner) throws {
-    signature = try signer.sign(hash: hashForSigning())
+  public mutating func sign(with account: EthereumAccount) throws {
+    signature = try account.sign(hash: hashForSigning())
   }
 
   /// Returns a new signed transaction
-  public func signed(with signer: EthereumSigner) throws -> EthereumTransaction {
+  public func signed(with account: EthereumAccount) throws -> EthereumTransaction {
     var tx = self
-    try tx.sign(with: signer)
+    try tx.sign(with: account)
     return tx
   }
 

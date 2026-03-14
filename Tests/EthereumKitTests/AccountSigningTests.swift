@@ -8,7 +8,7 @@ import XCTest
 
 @testable import EthereumKit
 
-final class EthereumSignableAccountTests: XCTestCase {
+final class EthereumAccountSigningTests: XCTestCase {
 
   // Anvil default private key for account 0
   let privateKey = Data(hex: "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
@@ -16,23 +16,15 @@ final class EthereumSignableAccountTests: XCTestCase {
 
   // MARK: - Initialization
 
-  func testInitFromSigner() throws {
-    let signer = try EthereumSigner(privateKey: privateKey)
-    let account = try EthereumSignableAccount(signer)
-
-    XCTAssertEqual(account.address, expectedAddress)
-    XCTAssertNotNil(account.publicKey)
-  }
-
   func testInitFromPrivateKey() throws {
-    let account = try EthereumSignableAccount(privateKey: privateKey)
+    let account = try EthereumAccount(privateKey: privateKey)
 
     XCTAssertEqual(account.address, expectedAddress)
   }
 
   func testInitFromMnemonic() throws {
     let mnemonic = "test test test test test test test test test test test junk"
-    let account = try EthereumSignableAccount(mnemonic: mnemonic, path: .ethereum)
+    let account = try EthereumAccount(mnemonic: mnemonic, path: .ethereum)
 
     // First account from this mnemonic
     XCTAssertNotNil(account.address)
@@ -42,32 +34,15 @@ final class EthereumSignableAccountTests: XCTestCase {
   func testInitWithInvalidPrivateKeyThrows() {
     let invalidKey = Data(repeating: 0, count: 32)
 
-    XCTAssertThrowsError(try EthereumSignableAccount(privateKey: invalidKey)) { error in
+    XCTAssertThrowsError(try EthereumAccount(privateKey: invalidKey)) { error in
       XCTAssertTrue(error is SignerError)
     }
-  }
-
-  // MARK: - Account Protocol
-
-  func testBalanceRequest() throws {
-    let account = try EthereumSignableAccount(privateKey: privateKey)
-    let request = account.balanceRequest()
-
-    XCTAssertEqual(request.method, "eth_getBalance")
-    XCTAssertEqual(request.params.count, 2)
-  }
-
-  func testNonceRequest() throws {
-    let account = try EthereumSignableAccount(privateKey: privateKey)
-    let request = account.nonceRequest()
-
-    XCTAssertEqual(request.method, "eth_getTransactionCount")
   }
 
   // MARK: - Signer Protocol
 
   func testSignHash() throws {
-    let account = try EthereumSignableAccount(privateKey: privateKey)
+    let account = try EthereumAccount(privateKey: privateKey)
     let hash = Keccak256.hash("test message".data(using: .utf8)!)
 
     let signature = try account.sign(hash: hash)
@@ -80,7 +55,7 @@ final class EthereumSignableAccountTests: XCTestCase {
   // MARK: - Message Signing (EIP-191)
 
   func testSignMessage() throws {
-    let account = try EthereumSignableAccount(privateKey: privateKey)
+    let account = try EthereumAccount(privateKey: privateKey)
     let message = "Hello, Ethereum!"
 
     let signature = try account.signMessage(message)
@@ -92,7 +67,7 @@ final class EthereumSignableAccountTests: XCTestCase {
   }
 
   func testSignMessageData() throws {
-    let account = try EthereumSignableAccount(privateKey: privateKey)
+    let account = try EthereumAccount(privateKey: privateKey)
     let messageData = "Hello, Ethereum!".data(using: .utf8)!
 
     let signature = try account.signMessage(messageData)
@@ -103,7 +78,7 @@ final class EthereumSignableAccountTests: XCTestCase {
   // MARK: - Transaction Signing
 
   func testSignTransaction() throws {
-    let account = try EthereumSignableAccount(privateKey: privateKey)
+    let account = try EthereumAccount(privateKey: privateKey)
     let toAddress = EthereumAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")!
 
     var tx = EthereumTransaction(
@@ -124,7 +99,7 @@ final class EthereumSignableAccountTests: XCTestCase {
   }
 
   func testSignedTransactionRecoversSender() throws {
-    let account = try EthereumSignableAccount(privateKey: privateKey)
+    let account = try EthereumAccount(privateKey: privateKey)
     let toAddress = EthereumAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")!
 
     var tx = EthereumTransaction(
@@ -146,24 +121,46 @@ final class EthereumSignableAccountTests: XCTestCase {
 
   // MARK: - Transfer Helper
 
-  func testCreateTransferTransaction() throws {
-    let account = try EthereumSignableAccount(privateKey: privateKey)
+  func testCreateAndSignTransferTransaction() throws {
+    let account = try EthereumAccount(privateKey: privateKey)
     let toAddress = EthereumAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")!
-    let value = Wei.fromEther(1)
 
-    let tx = account.transferTransaction(
-      to: toAddress,
-      value: value,
+    var tx = EthereumTransaction(
+      chainId: 1,
       nonce: 0,
       maxPriorityFeePerGas: Wei.fromGwei(1),
       maxFeePerGas: Wei.fromGwei(20),
-      chainId: 1
+      gasLimit: 21000,
+      to: toAddress,
+      value: Wei.fromEther(1),
+      data: Data()
     )
 
+    try account.sign(transaction: &tx)
+
+    XCTAssertNotNil(tx.signature)
+    XCTAssertNotNil(tx.rawTransaction)
     XCTAssertEqual(tx.to, toAddress)
-    XCTAssertEqual(tx.value, value)
-    XCTAssertEqual(tx.gasLimit, 21000)  // Standard ETH transfer
-    XCTAssertTrue(tx.data.isEmpty)
+    XCTAssertEqual(tx.gasLimit, 21000)
+  }
+
+  // MARK: - Protocol Conformance
+
+  func testConformsToAccountProtocol() throws {
+    let account = try EthereumAccount(privateKey: privateKey)
+    func acceptAccount<A: Account>(_ a: A) where A.C == EvmChain {}
+    acceptAccount(account)
+  }
+
+  func testProviderIsNilByDefault() throws {
+    let account = try EthereumAccount(privateKey: privateKey)
+    XCTAssertNil(account.provider)
+  }
+
+  func testInvalidMnemonicThrows() {
+    XCTAssertThrowsError(try EthereumAccount(mnemonic: "not a valid mnemonic", path: .ethereum)) { error in
+      XCTAssertTrue(error is SignerError)
+    }
   }
 }
 
@@ -186,7 +183,7 @@ final class AccountSigningAnvilTests: XCTestCase {
   }
 
   func testSignAndSendTransaction() async throws {
-    let account = try EthereumSignableAccount(privateKey: privateKey)
+    let account = try EthereumAccount(privateKey: privateKey)
 
     // 1. Get nonce
     let nonceHex: String = try await provider.send(
@@ -199,13 +196,15 @@ final class AccountSigningAnvilTests: XCTestCase {
     let gasPrice = Wei(gasPriceHex) ?? .zero
 
     // 3. Create and sign transaction
-    var tx = account.transferTransaction(
-      to: toAddress,
-      value: Wei.fromEther(1),
+    var tx = EthereumTransaction(
+      chainId: 31337,
       nonce: nonce,
       maxPriorityFeePerGas: gasPrice,
       maxFeePerGas: gasPrice * 2,
-      chainId: 31337
+      gasLimit: 21000,
+      to: toAddress,
+      value: Wei.fromEther(1),
+      data: Data()
     )
 
     try account.sign(transaction: &tx)

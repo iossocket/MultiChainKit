@@ -5,21 +5,6 @@
 
 import Foundation
 
-// MARK: - ChainRequest
-
-/// RPC request to a blockchain node.
-public struct ChainRequest: Sendable {
-  public let method: String
-  public let params: [AnyEncodable]
-
-  public init(method: String, params: [any Encodable & Sendable] = []) {
-    self.method = method
-    self.params = params.map { AnyEncodable($0) }
-  }
-}
-
-// MARK: - Provider
-
 /// Handles JSON-RPC communication with blockchain nodes.
 public protocol Provider<C>: Sendable where C: Chain {
   associatedtype C: Chain

@@ -80,13 +80,9 @@ struct StarknetAccountTests {
 
   let privateKey = Felt("0x1234567890abcdef1234567890abcdef")!
 
-  func makeSigner() throws -> StarknetSigner {
-    try StarknetSigner(privateKey: privateKey)
-  }
-
   func makeAccount() throws -> StarknetAccount {
-    StarknetAccount(
-      signer: try makeSigner(),
+    try StarknetAccount(
+      privateKey: privateKey,
       address: StarknetAddress("0xabc")!,
       chain: .sepolia
     )
@@ -170,7 +166,7 @@ struct StarknetAccountTests {
     let signed = try account.signInvokeV1(unsigned)
 
     let hash = try unsigned.transactionHash()
-    let pubKey = account.signer.publicKeyFelt!
+    let pubKey = account.publicKeyFelt!
     let valid = try StarkCurve.verify(
       publicKey: pubKey, hash: hash,
       r: signed.signature[0], s: signed.signature[1]
@@ -196,9 +192,11 @@ struct StarknetAccountTests {
 
   @Test("Sign DeployAccountV1 is verifiable")
   func signDeployAccountV1() throws {
-    let signer = try makeSigner()
-    let account = StarknetAccount(
-      signer: signer, address: StarknetAddress("0xabc")!, chain: .sepolia)
+    let account = try StarknetAccount(
+      privateKey: privateKey,
+      address: StarknetAddress("0xabc")!,
+      chain: .sepolia
+    )
 
     let tx = StarknetDeployAccountV1(
       classHash: Felt(0x111), contractAddressSalt: Felt(0x222),
@@ -210,7 +208,7 @@ struct StarknetAccountTests {
     #expect(signed.signature.count == 2)
     let hash = try tx.transactionHash()
     let valid = try StarkCurve.verify(
-      publicKey: signer.publicKeyFelt!, hash: hash,
+      publicKey: account.publicKeyFelt!, hash: hash,
       r: signed.signature[0], s: signed.signature[1]
     )
     #expect(valid)
@@ -264,9 +262,8 @@ struct StarknetAccountTests {
 
   @Test("account with provider does not throw noProvider")
   func accountWithProvider() throws {
-    let signer = try makeSigner()
-    let account = StarknetAccount(
-      signer: signer,
+    let account = try StarknetAccount(
+      privateKey: privateKey,
       address: StarknetAddress("0xabc")!,
       chain: .sepolia,
       provider: StarknetProvider(chain: .sepolia)
@@ -274,7 +271,7 @@ struct StarknetAccountTests {
     #expect(account.provider != nil)
   }
 
-  // MARK: - SignableAccount conformance
+  // MARK: - Account conformance
 
   @Test("sign(transaction:) signs InvokeV3 via protocol method")
   func signTransactionInvokeV3() throws {
@@ -291,7 +288,7 @@ struct StarknetAccountTests {
     // Verify signature
     let hash = try tx.transactionHashFelt()
     let valid = try StarkCurve.verify(
-      publicKey: account.signer.publicKeyFelt!, hash: hash,
+      publicKey: account.publicKeyFelt!, hash: hash,
       r: tx.signature[0], s: tx.signature[1]
     )
     #expect(valid)
@@ -329,52 +326,31 @@ struct StarknetAccountTests {
     let sig = try account.signMessage(message)
 
     let valid = try StarkCurve.verify(
-      publicKey: account.signer.publicKeyFelt!,
+      publicKey: account.publicKeyFelt!,
       hash: Felt(message),
       r: sig.r, s: sig.s
     )
     #expect(valid)
   }
 
-  @Test("balanceRequest returns starknet_call for STRK ERC20")
-  func balanceRequestMethod() throws {
+  @Test("conforms to Account protocol")
+  func conformsToAccount() throws {
     let account = try makeAccount()
-    let request = account.balanceRequest()
-    #expect(request.method == "starknet_call")
+    func acceptAccount<A: Account>(_ a: A) where A.C == Starknet {}
+    acceptAccount(account)
   }
 
-  @Test("sendTransactionRequest returns correct method for InvokeV3")
-  func sendTxRequestInvokeV3() throws {
-    let account = try makeAccount()
-    let call = StarknetCall(contractAddress: Felt(0x1), entryPointSelector: Felt(0x2), calldata: [])
-    let inner = account.buildInvokeV3(calls: [call], resourceBounds: .zero, nonce: Felt(0))
-    var tx = StarknetTransaction.invokeV3(inner)
-    try account.sign(transaction: &tx)
-
-    let request = account.sendTransactionRequest(tx)
-    #expect(request.method == "starknet_addInvokeTransaction")
+  @Test("zero private key throws")
+  func zeroPrivateKeyThrows() {
+    #expect(throws: StarkCurveError.self) {
+      try StarknetAccount(privateKey: Felt.zero, address: StarknetAddress("0xabc")!, chain: .sepolia)
+    }
   }
 
-  @Test("sendTransactionRequest returns correct method for DeployAccountV1")
-  func sendTxRequestDeployV1() throws {
+  @Test("provider is nil by default")
+  func providerNilByDefault() throws {
     let account = try makeAccount()
-    let inner = StarknetDeployAccountV1(
-      classHash: Felt(0x111), contractAddressSalt: Felt(0x222),
-      constructorCalldata: [Felt(0x333)], maxFee: Felt(500),
-      nonce: .zero, chainId: account.chain.chainId
-    )
-    var tx = StarknetTransaction.deployAccountV1(inner)
-    try account.sign(transaction: &tx)
-
-    let request = account.sendTransactionRequest(tx)
-    #expect(request.method == "starknet_addDeployAccountTransaction")
-  }
-
-  @Test("conforms to SignableAccount protocol")
-  func conformsToSignableAccount() throws {
-    let account = try makeAccount()
-    func acceptSignable<A: SignableAccount>(_ a: A) where A.C == Starknet {}
-    acceptSignable(account)
+    #expect(account.provider == nil)
   }
 }
 

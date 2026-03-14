@@ -13,11 +13,10 @@
 
 /// Convenience facade that derives EVM and Starknet accounts from a single mnemonic.
 public struct MultiChainWallet: Sendable {
-  public private(set) var ethereum: EthereumSignableAccount
+  public private(set) var ethereum: EthereumAccount
   public private(set) var starknet: StarknetAccount
 
   private let mnemonic: String
-  private let evmSigner: EthereumSigner
   private let ethereumPath: DerivationPath
   private let starknetPath: DerivationPath
 
@@ -33,32 +32,34 @@ public struct MultiChainWallet: Sendable {
     self.ethereumPath = ethereumPath
     self.starknetPath = starknetPath
 
-    // Ethereum: mnemonic → signer → account
-    let signer = try EthereumSigner(mnemonic: mnemonic, path: ethereumPath)
-    self.evmSigner = signer
-    self.ethereum = try EthereumSignableAccount(signer)
+    // Ethereum: mnemonic → account
+    self.ethereum = try EthereumAccount(mnemonic: mnemonic, path: ethereumPath)
 
-    // Starknet: mnemonic → signer → compute address → account
-    let starkSigner = try StarknetSigner(mnemonic: mnemonic, path: starknetPath)
-    guard let pubKey = starkSigner.publicKeyFelt else {
+    // Starknet: mnemonic → derive key → compute address → account
+    let seed = try BIP39.seed(from: mnemonic, password: "")
+    let starkPrivateKey = try StarknetKeyDerivation.derivePrivateKey(seed: seed, path: starknetPath)
+    guard let pubKey = try? StarkCurve.getPublicKey(privateKey: starkPrivateKey) else {
       throw SignerError.publicKeyDerivationFailed
     }
     let address = try starknetAccountType.computeAddress(publicKey: pubKey, salt: pubKey)
-    self.starknet = StarknetAccount(signer: starkSigner, address: address, chain: starknetChain)
+    self.starknet = try StarknetAccount(
+      privateKey: starkPrivateKey, address: address, chain: starknetChain)
   }
 
   public mutating func connectEthereum(provider: EthereumProvider) throws {
-    self.ethereum = try EthereumSignableAccount(evmSigner, provider: provider)
+    self.ethereum = try EthereumAccount(mnemonic: mnemonic, path: ethereumPath, provider: provider)
   }
 
-  public func evmAccount(provider: EthereumProvider) throws -> EthereumSignableAccount {
-    try EthereumSignableAccount(evmSigner, provider: provider)
+  public func evmAccount(provider: EthereumProvider) throws -> EthereumAccount {
+    try EthereumAccount(mnemonic: mnemonic, path: ethereumPath, provider: provider)
   }
 
   /// Attach a Starknet provider to the wallet.
-  public mutating func connectStarknet(provider: StarknetProvider) {
-    self.starknet = StarknetAccount(
-      signer: starknet.signer,
+  public mutating func connectStarknet(provider: StarknetProvider) throws {
+    let seed = try BIP39.seed(from: mnemonic, password: "")
+    let starkPrivateKey = try StarknetKeyDerivation.derivePrivateKey(seed: seed, path: starknetPath)
+    self.starknet = try StarknetAccount(
+      privateKey: starkPrivateKey,
       address: starknet.address,
       chain: starknet.chain,
       provider: provider

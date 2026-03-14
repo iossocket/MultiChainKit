@@ -177,10 +177,10 @@ struct SNIP12V0Tests {
     )
     let hash = try typedData.messageHash(accountAddress: testAccount)
 
-    let signer = try StarknetSigner(privateKey: Felt("0x1234567890abcdef1234567890abcdef")!)
-    let sig = try signer.sign(feltHash: hash)
+    let account = try StarknetAccount(privateKey: Felt("0x1234567890abcdef1234567890abcdef")!, address: .zero, chain: .sepolia)
+    let sig = try account.sign(feltHash: hash)
     let valid = try StarkCurve.verify(
-      publicKey: signer.publicKeyFelt!, hash: hash,
+      publicKey: account.publicKeyFelt!, hash: hash,
       r: sig.r, s: sig.s
     )
     #expect(valid)

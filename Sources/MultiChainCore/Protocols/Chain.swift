@@ -5,7 +5,7 @@
 
 import Foundation
 
-// MARK: - Chain
+public typealias TxHash = String
 
 /// A blockchain network with its associated types.
 public protocol Chain: Sendable, Identifiable {

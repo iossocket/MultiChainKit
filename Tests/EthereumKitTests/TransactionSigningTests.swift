@@ -18,7 +18,7 @@ final class TransactionSigningTests: XCTestCase {
   // MARK: - Sign Transaction
 
   func testSignTransaction() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
     var tx = EthereumTransaction(
       chainId: 1,
       nonce: 0,
@@ -30,7 +30,7 @@ final class TransactionSigningTests: XCTestCase {
       data: Data()
     )
 
-    try tx.sign(with: signer)
+    try tx.sign(with: account)
 
     XCTAssertNotNil(tx.signature)
     XCTAssertEqual(tx.signature?.r.count, 32)
@@ -38,7 +38,7 @@ final class TransactionSigningTests: XCTestCase {
   }
 
   func testSignedTransactionHash() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
     var tx = EthereumTransaction(
       chainId: 1,
       nonce: 0,
@@ -50,14 +50,14 @@ final class TransactionSigningTests: XCTestCase {
       data: Data()
     )
 
-    try tx.sign(with: signer)
+    try tx.sign(with: account)
 
     XCTAssertNotNil(tx.hash)
     XCTAssertEqual(tx.hash?.count, 32)
   }
 
   func testSignTransactionDeterministic() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
 
     var tx1 = EthereumTransaction(
       chainId: 1,
@@ -81,8 +81,8 @@ final class TransactionSigningTests: XCTestCase {
       data: Data()
     )
 
-    try tx1.sign(with: signer)
-    try tx2.sign(with: signer)
+    try tx1.sign(with: account)
+    try tx2.sign(with: account)
 
     XCTAssertEqual(tx1.signature?.r, tx2.signature?.r)
     XCTAssertEqual(tx1.signature?.s, tx2.signature?.s)
@@ -92,7 +92,7 @@ final class TransactionSigningTests: XCTestCase {
   // MARK: - Signature Recovery
 
   func testRecoverSigner() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
     var tx = EthereumTransaction(
       chainId: 1,
       nonce: 0,
@@ -104,14 +104,14 @@ final class TransactionSigningTests: XCTestCase {
       data: Data()
     )
 
-    try tx.sign(with: signer)
+    try tx.sign(with: account)
 
     let recoveredAddress = try tx.recoverSender()
-    XCTAssertEqual(recoveredAddress, signer.address)
+    XCTAssertEqual(recoveredAddress, account.address)
   }
 
   func testRecoverSignerFromContractDeploy() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
     var tx = EthereumTransaction(
       chainId: 1,
       nonce: 0,
@@ -123,16 +123,16 @@ final class TransactionSigningTests: XCTestCase {
       data: Data(repeating: 0x60, count: 100)
     )
 
-    try tx.sign(with: signer)
+    try tx.sign(with: account)
 
     let recoveredAddress = try tx.recoverSender()
-    XCTAssertEqual(recoveredAddress, signer.address)
+    XCTAssertEqual(recoveredAddress, account.address)
   }
 
   // MARK: - Signed Transaction Encoding
 
   func testSignedTransactionRawData() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
     var tx = EthereumTransaction(
       chainId: 1,
       nonce: 0,
@@ -144,7 +144,7 @@ final class TransactionSigningTests: XCTestCase {
       data: Data()
     )
 
-    try tx.sign(with: signer)
+    try tx.sign(with: account)
 
     let rawTx = tx.rawTransaction
     XCTAssertNotNil(rawTx)
@@ -170,7 +170,7 @@ final class TransactionSigningTests: XCTestCase {
   // MARK: - Different Chain IDs
 
   func testSignTransactionMainnet() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
     var tx = EthereumTransaction(
       chainId: 1,
       nonce: 0,
@@ -182,13 +182,13 @@ final class TransactionSigningTests: XCTestCase {
       data: Data()
     )
 
-    try tx.sign(with: signer)
+    try tx.sign(with: account)
 
     XCTAssertNotNil(tx.signature)
   }
 
   func testSignTransactionSepolia() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
     var tx = EthereumTransaction(
       chainId: 11_155_111,
       nonce: 0,
@@ -200,7 +200,7 @@ final class TransactionSigningTests: XCTestCase {
       data: Data()
     )
 
-    try tx.sign(with: signer)
+    try tx.sign(with: account)
 
     XCTAssertNotNil(tx.signature)
   }
@@ -208,7 +208,7 @@ final class TransactionSigningTests: XCTestCase {
   // MARK: - Verify Signature
 
   func testVerifySignature() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
     var tx = EthereumTransaction(
       chainId: 1,
       nonce: 0,
@@ -220,7 +220,7 @@ final class TransactionSigningTests: XCTestCase {
       data: Data()
     )
 
-    try tx.sign(with: signer)
+    try tx.sign(with: account)
 
     let isValid = try tx.verifySignature()
     XCTAssertTrue(isValid)
@@ -244,7 +244,7 @@ final class TransactionSigningTests: XCTestCase {
   // MARK: - Edge Cases
 
   func testSignTransactionWithAccessList() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
     let accessList = [
       AccessListEntry(
         address: testAddress,
@@ -264,15 +264,15 @@ final class TransactionSigningTests: XCTestCase {
       accessList: accessList
     )
 
-    try tx.sign(with: signer)
+    try tx.sign(with: account)
 
     XCTAssertNotNil(tx.signature)
     let recoveredAddress = try tx.recoverSender()
-    XCTAssertEqual(recoveredAddress, signer.address)
+    XCTAssertEqual(recoveredAddress, account.address)
   }
 
   func testSignTransactionWithLargeData() throws {
-    let signer = try EthereumSigner(privateKey: testPrivateKey)
+    let account = try EthereumAccount(privateKey: testPrivateKey)
     let largeData = Data(repeating: 0xab, count: 10000)
 
     var tx = EthereumTransaction(
@@ -286,11 +286,11 @@ final class TransactionSigningTests: XCTestCase {
       data: largeData
     )
 
-    try tx.sign(with: signer)
+    try tx.sign(with: account)
 
     XCTAssertNotNil(tx.signature)
     let recoveredAddress = try tx.recoverSender()
-    XCTAssertEqual(recoveredAddress, signer.address)
+    XCTAssertEqual(recoveredAddress, account.address)
   }
 }
 

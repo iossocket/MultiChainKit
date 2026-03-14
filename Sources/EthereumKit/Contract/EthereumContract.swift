@@ -225,7 +225,7 @@ public struct EthereumContract: Sendable {
   public func write(
     functionName: String,
     args: [ABIValue] = [],
-    account: EthereumSignableAccount,
+    account: EthereumAccount,
     value: Wei = .zero
   ) async throws -> String {
     let calldata = try encodeWrite(functionName: functionName, args: args)

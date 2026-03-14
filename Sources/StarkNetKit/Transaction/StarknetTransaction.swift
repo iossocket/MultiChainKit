@@ -327,10 +327,10 @@ public enum StarknetTransaction: ChainTransaction, Sendable {
     }
   }
 
-  /// Sign this transaction with a signer and return a new copy with the signature attached.
-  public func signed(with signer: StarknetSigner) throws -> StarknetTransaction {
+  /// Sign this transaction with an account and return a new copy with the signature attached.
+  public func signed(with account: StarknetAccount) throws -> StarknetTransaction {
     let hash = try transactionHashFelt()
-    let sig = try signer.sign(feltHash: hash)
+    let sig = try account.sign(feltHash: hash)
     switch self {
     case .invokeV1(var tx):
       tx.signature = sig.feltArray
@@ -348,7 +348,7 @@ public enum StarknetTransaction: ChainTransaction, Sendable {
   }
 
   /// Mutating sign — attaches signature in place.
-  public mutating func sign(with signer: StarknetSigner) throws {
-    self = try signed(with: signer)
+  public mutating func sign(with account: StarknetAccount) throws {
+    self = try signed(with: account)
   }
 }

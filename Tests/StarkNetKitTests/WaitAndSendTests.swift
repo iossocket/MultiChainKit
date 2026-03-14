@@ -116,10 +116,8 @@ struct StarknetExecuteV3Tests {
 
   @Test("method signature compiles")
   func methodExists() throws {
-    let signer = try StarknetSigner(
-      privateKey: Felt(0x1234).bigEndianData)
-    let account = StarknetAccount(
-      signer: signer,
+    let account = try StarknetAccount(
+      privateKey: Felt(0x1234).bigEndianData,
       address: StarknetAddress("0x1")!,
       chain: .sepolia
     )

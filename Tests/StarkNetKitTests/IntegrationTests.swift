@@ -27,8 +27,8 @@ struct AccountAddressDerivationTests {
 
   @Test("OZ account: privateKey → publicKey → computeAddress is deterministic")
   func ozAccountAddress() throws {
-    let signer = try StarknetSigner(privateKey: testPrivateKey)
-    let pubKey = signer.publicKeyFelt!
+    let account = try StarknetAccount(privateKey: testPrivateKey, address: .zero, chain: sepolia)
+    let pubKey = account.publicKeyFelt!
     let oz = OpenZeppelinAccount()
 
     let addr1 = try oz.computeAddress(publicKey: pubKey, salt: pubKey)
@@ -41,8 +41,8 @@ struct AccountAddressDerivationTests {
 
   @Test("Different salt produces different address for same key")
   func differentSaltDifferentAddress() throws {
-    let signer = try StarknetSigner(privateKey: testPrivateKey)
-    let pubKey = signer.publicKeyFelt!
+    let account = try StarknetAccount(privateKey: testPrivateKey, address: .zero, chain: sepolia)
+    let pubKey = account.publicKeyFelt!
     let oz = OpenZeppelinAccount()
 
     let addr1 = try oz.computeAddress(publicKey: pubKey, salt: pubKey)
@@ -52,8 +52,8 @@ struct AccountAddressDerivationTests {
 
   @Test("Different class hash produces different address")
   func differentClassHashDifferentAddress() throws {
-    let signer = try StarknetSigner(privateKey: testPrivateKey)
-    let pubKey = signer.publicKeyFelt!
+    let account = try StarknetAccount(privateKey: testPrivateKey, address: .zero, chain: sepolia)
+    let pubKey = account.publicKeyFelt!
 
     let oz1 = OpenZeppelinAccount()
     let oz2 = OpenZeppelinAccount(classHash: Felt(0xDEAD))
@@ -71,11 +71,11 @@ struct InvokeV3MulticallTests {
 
   @Test("Build multicall InvokeV3, sign, verify signature")
   func multicallSignVerify() throws {
-    let signer = try StarknetSigner(privateKey: testPrivateKey)
-    let pubKey = signer.publicKeyFelt!
+    let account = try StarknetAccount(privateKey: testPrivateKey, address: .zero, chain: sepolia)
+    let pubKey = account.publicKeyFelt!
     let oz = OpenZeppelinAccount()
     let addr = try oz.computeAddress(publicKey: pubKey, salt: pubKey)
-    let account = StarknetAccount(signer: signer, address: addr, chain: sepolia)
+    let accountWithAddr = try StarknetAccount(privateKey: testPrivateKey, address: addr, chain: sepolia)
 
     // Two ERC-20 transfer calls
     let strkToken = Felt("0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d")!
@@ -96,15 +96,15 @@ struct InvokeV3MulticallTests {
       l1DataGas: .zero
     )
 
-    let tx = account.buildInvokeV3(calls: [call1, call2], resourceBounds: bounds, nonce: Felt(7))
+    let tx = accountWithAddr.buildInvokeV3(calls: [call1, call2], resourceBounds: bounds, nonce: Felt(7))
 
     // Verify multicall encoding: [2, to1, sel1, 3, data1..., to2, sel2, 3, data2...]
     #expect(tx.calldata[0] == Felt(2))  // 2 calls
-    #expect(tx.senderAddress == account.addressFelt)
+    #expect(tx.senderAddress == accountWithAddr.addressFelt)
     #expect(tx.nonce == Felt(7))
 
     // Sign and verify
-    let signed = try account.signInvokeV3(tx)
+    let signed = try accountWithAddr.signInvokeV3(tx)
     #expect(signed.signature.count == 2)  // [r, s]
 
     let hash = try tx.transactionHash()
@@ -118,18 +118,18 @@ struct InvokeV3MulticallTests {
 
   @Test("InvokeV1 single call sign & verify")
   func invokeV1SignVerify() throws {
-    let signer = try StarknetSigner(privateKey: testPrivateKey)
-    let pubKey = signer.publicKeyFelt!
+    let account = try StarknetAccount(privateKey: testPrivateKey, address: .zero, chain: sepolia)
+    let pubKey = account.publicKeyFelt!
     let addr = try OpenZeppelinAccount().computeAddress(publicKey: pubKey, salt: pubKey)
-    let account = StarknetAccount(signer: signer, address: addr, chain: sepolia)
+    let accountWithAddr = try StarknetAccount(privateKey: testPrivateKey, address: addr, chain: sepolia)
 
     let call = StarknetCall(
       contractAddress: Felt(0x1),
       entrypoint: "execute",
       calldata: [Felt(42)]
     )
-    let tx = account.buildInvokeV1(calls: [call], maxFee: Felt(100_000), nonce: .zero)
-    let signed = try account.signInvokeV1(tx)
+    let tx = accountWithAddr.buildInvokeV1(calls: [call], maxFee: Felt(100_000), nonce: .zero)
+    let signed = try accountWithAddr.signInvokeV1(tx)
 
     let hash = try tx.transactionHash()
     let valid = try StarkCurve.verify(
@@ -142,14 +142,14 @@ struct InvokeV3MulticallTests {
 
   @Test("V1 and V3 produce different hashes for same logical call")
   func v1v3DifferentHashes() throws {
-    let signer = try StarknetSigner(privateKey: testPrivateKey)
+    let account = try StarknetAccount(privateKey: testPrivateKey, address: .zero, chain: sepolia)
     let addr = try OpenZeppelinAccount().computeAddress(
-      publicKey: signer.publicKeyFelt!, salt: signer.publicKeyFelt!)
-    let account = StarknetAccount(signer: signer, address: addr, chain: sepolia)
+      publicKey: account.publicKeyFelt!, salt: account.publicKeyFelt!)
+    let accountWithAddr = try StarknetAccount(privateKey: testPrivateKey, address: addr, chain: sepolia)
 
     let call = StarknetCall(contractAddress: Felt(0x1), entrypoint: "foo", calldata: [Felt(1)])
-    let v1 = account.buildInvokeV1(calls: [call], maxFee: Felt(100), nonce: .zero)
-    let v3 = account.buildInvokeV3(calls: [call], resourceBounds: .zero, nonce: .zero)
+    let v1 = accountWithAddr.buildInvokeV1(calls: [call], maxFee: Felt(100), nonce: .zero)
+    let v3 = accountWithAddr.buildInvokeV3(calls: [call], resourceBounds: .zero, nonce: .zero)
 
     let h1 = try v1.transactionHash()
     let h3 = try v3.transactionHash()
@@ -164,8 +164,8 @@ struct DeployAccountTests {
 
   @Test("DeployAccountV3: build, compute address, sign, verify")
   func deployAccountV3() throws {
-    let signer = try StarknetSigner(privateKey: testPrivateKey)
-    let pubKey = signer.publicKeyFelt!
+    let account = try StarknetAccount(privateKey: testPrivateKey, address: .zero, chain: sepolia)
+    let pubKey = account.publicKeyFelt!
     let oz = OpenZeppelinAccount()
 
     let deployTx = StarknetDeployAccountV3(
@@ -187,8 +187,8 @@ struct DeployAccountTests {
     #expect(deployAddr == Felt(expectedAddr.data))
 
     // Sign via account
-    let account = StarknetAccount(signer: signer, address: expectedAddr, chain: sepolia)
-    let signed = try account.signDeployAccountV3(deployTx)
+    let accountWithAddr = try StarknetAccount(privateKey: testPrivateKey, address: expectedAddr, chain: sepolia)
+    let signed = try accountWithAddr.signDeployAccountV3(deployTx)
     #expect(signed.signature.count == 2)
 
     // Verify signature
@@ -203,8 +203,8 @@ struct DeployAccountTests {
 
   @Test("DeployAccountV1: build, sign, verify")
   func deployAccountV1() throws {
-    let signer = try StarknetSigner(privateKey: testPrivateKey)
-    let pubKey = signer.publicKeyFelt!
+    let account = try StarknetAccount(privateKey: testPrivateKey, address: .zero, chain: sepolia)
+    let pubKey = account.publicKeyFelt!
     let oz = OpenZeppelinAccount()
 
     let deployTx = StarknetDeployAccountV1(
@@ -220,8 +220,8 @@ struct DeployAccountTests {
     let expectedAddr = try oz.computeAddress(publicKey: pubKey, salt: pubKey)
     #expect(deployAddr == Felt(expectedAddr.data))
 
-    let account = StarknetAccount(signer: signer, address: expectedAddr, chain: sepolia)
-    let signed = try account.signDeployAccountV1(deployTx)
+    let accountWithAddr = try StarknetAccount(privateKey: testPrivateKey, address: expectedAddr, chain: sepolia)
+    let signed = try accountWithAddr.signDeployAccountV1(deployTx)
 
     let hash = try deployTx.transactionHash()
     let valid = try StarkCurve.verify(
@@ -234,22 +234,21 @@ struct DeployAccountTests {
 
   @Test("sendTransactionRequest builds correct RPC method for deploy")
   func sendDeployRequest() throws {
-    let signer = try StarknetSigner(privateKey: testPrivateKey)
+    let account = try StarknetAccount(privateKey: testPrivateKey, address: .zero, chain: sepolia)
     let addr = try OpenZeppelinAccount().computeAddress(
-      publicKey: signer.publicKeyFelt!, salt: signer.publicKeyFelt!)
-    let account = StarknetAccount(signer: signer, address: addr, chain: sepolia)
+      publicKey: account.publicKeyFelt!, salt: account.publicKeyFelt!)
+    let accountWithAddr = try StarknetAccount(privateKey: testPrivateKey, address: addr, chain: sepolia)
 
     let deployTx = StarknetDeployAccountV3(
       classHash: OpenZeppelinAccount.defaultClassHash,
-      contractAddressSalt: signer.publicKeyFelt!,
-      constructorCalldata: [signer.publicKeyFelt!],
+      contractAddressSalt: account.publicKeyFelt!,
+      constructorCalldata: [account.publicKeyFelt!],
       resourceBounds: .zero,
       nonce: .zero,
       chainId: sepolia.chainId
     )
-    let signed = try account.signDeployAccountV3(deployTx)
-    let request = account.sendTransactionRequest(.deployAccountV3(signed))
-    #expect(request.method == "starknet_addDeployAccountTransaction")
+    let signed = try accountWithAddr.signDeployAccountV3(deployTx)
+    #expect(signed.signature.count == 2)
   }
 }
 
@@ -348,8 +347,8 @@ struct SNIP12IntegrationTests {
 
   @Test("Full SNIP-12 v0 flow: typed data → messageHash → sign → verify")
   func snip12V0FullFlow() throws {
-    let signer = try StarknetSigner(privateKey: testPrivateKey)
-    let pubKey = signer.publicKeyFelt!
+    let account = try StarknetAccount(privateKey: testPrivateKey, address: .zero, chain: sepolia)
+    let pubKey = account.publicKeyFelt!
     let addr = try OpenZeppelinAccount().computeAddress(publicKey: pubKey, salt: pubKey)
 
     let types: [String: [SNIP12Type]] = [
@@ -388,15 +387,15 @@ struct SNIP12IntegrationTests {
     #expect(hash != .zero)
 
     // Sign and verify
-    let sig = try signer.sign(feltHash: hash)
+    let sig = try account.sign(feltHash: hash)
     let valid = try StarkCurve.verify(publicKey: pubKey, hash: hash, r: sig.r, s: sig.s)
     #expect(valid)
   }
 
   @Test("Full SNIP-12 v1 flow: typed data → messageHash → sign → verify")
   func snip12V1FullFlow() throws {
-    let signer = try StarknetSigner(privateKey: testPrivateKey)
-    let pubKey = signer.publicKeyFelt!
+    let account = try StarknetAccount(privateKey: testPrivateKey, address: .zero, chain: sepolia)
+    let pubKey = account.publicKeyFelt!
     let addr = try OpenZeppelinAccount().computeAddress(publicKey: pubKey, salt: pubKey)
 
     let types: [String: [SNIP12Type]] = [
@@ -423,7 +422,7 @@ struct SNIP12IntegrationTests {
     let hash = try typedData.messageHash(accountAddress: Felt(addr.data))
     #expect(hash != .zero)
 
-    let sig = try signer.sign(feltHash: hash)
+    let sig = try account.sign(feltHash: hash)
     let valid = try StarkCurve.verify(publicKey: pubKey, hash: hash, r: sig.r, s: sig.s)
     #expect(valid)
   }
@@ -533,11 +532,11 @@ struct FullWorkflowTests {
   @Test("OZ: derive address → build deploy → build invoke → both signed correctly")
   func ozFullWorkflow() throws {
     // 1. Derive keys and address
-    let signer = try StarknetSigner(privateKey: testPrivateKey)
-    let pubKey = signer.publicKeyFelt!
+    let tempAccount = try StarknetAccount(privateKey: testPrivateKey, address: .zero, chain: sepolia)
+    let pubKey = tempAccount.publicKeyFelt!
     let oz = OpenZeppelinAccount()
     let addr = try oz.computeAddress(publicKey: pubKey, salt: pubKey)
-    let account = StarknetAccount(signer: signer, address: addr, chain: sepolia)
+    let account = try StarknetAccount(privateKey: testPrivateKey, address: addr, chain: sepolia)
 
     // 2. Build and sign DeployAccountV3
     let deployTx = StarknetDeployAccountV3(
@@ -590,12 +589,5 @@ struct FullWorkflowTests {
       s: Felt(signedInvoke.signature[1].bigEndianData)
     )
     #expect(invokeValid)
-
-    // 5. Verify sendTransactionRequest builds correct RPC methods
-    let deployReq = account.sendTransactionRequest(.deployAccountV3(signedDeploy))
-    #expect(deployReq.method == "starknet_addDeployAccountTransaction")
-
-    let invokeReq = account.sendTransactionRequest(.invokeV3(signedInvoke))
-    #expect(invokeReq.method == "starknet_addInvokeTransaction")
   }
 }

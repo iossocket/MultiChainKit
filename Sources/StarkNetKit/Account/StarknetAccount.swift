@@ -2,7 +2,7 @@
 //  StarknetAccount.swift
 //  StarknetKit
 //
-//  Starknet account: combines a signer with an address to sign and build transactions.
+//  Starknet account: combines signing with an address to sign and build transactions.
 //  Works with any already-deployed account (OZ, Argent, Braavos, etc.).
 //
 
@@ -12,70 +12,114 @@ import MultiChainCore
 
 // MARK: - StarknetAccount
 
-public struct StarknetAccount: SignableAccount, Sendable {
+public struct StarknetAccount: Account, Sendable {
   public typealias C = Starknet
-  public typealias S = StarknetSigner
 
-  public let signer: StarknetSigner
+  private let privateKey: Felt
   public let address: StarknetAddress
   public let chain: Starknet
-  public let provider: StarknetProvider?
+  public let provider: (any Provider<Starknet>)?
 
-  /// Create an account from a signer and a known deployed address.
+  // MARK: - Init
+
   public init(
-    signer: StarknetSigner, address: StarknetAddress, chain: Starknet,
-    provider: StarknetProvider? = nil
-  ) {
-    self.signer = signer
+    privateKey: Felt, address: StarknetAddress, chain: Starknet,
+    provider: (any Provider<Starknet>)? = nil
+  ) throws {
+    guard privateKey != .zero else {
+      throw StarkCurveError.invalidPrivateKey
+    }
+    self.privateKey = privateKey
     self.address = address
     self.chain = chain
     self.provider = provider
   }
 
+  public init(
+    privateKey: Data, address: StarknetAddress, chain: Starknet,
+    provider: (any Provider<Starknet>)? = nil
+  ) throws {
+    let felt = Felt(privateKey)
+    try self.init(privateKey: felt, address: address, chain: chain, provider: provider)
+  }
+
+  public init(
+    mnemonic: String, path: DerivationPath, address: StarknetAddress, chain: Starknet,
+    provider: (any Provider<Starknet>)? = nil
+  ) throws {
+    guard BIP39.validate(mnemonic) else {
+      throw SignerError.invalidMnemonic
+    }
+    let seed = try BIP39.seed(from: mnemonic, password: "")
+    let key = try StarknetKeyDerivation.derivePrivateKey(seed: seed, path: path)
+    try self.init(privateKey: key, address: address, chain: chain, provider: provider)
+  }
+
   /// The sender address as Felt (for transaction building).
   public var addressFelt: Felt { Felt(address.data) }
 
-  // MARK: - SignableAccount Protocol
+  // MARK: - Account Protocol
 
-  public func balanceRequest() -> ChainRequest {
-    // STRK is the native token on Starknet.
-    let strkContract = Felt("0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d")!
-    let call = StarknetCall(
-      contractAddress: strkContract,
-      entrypoint: "balanceOf",
-      calldata: [addressFelt]
-    )
-    let callParam = StarknetCallParam(
-      contractAddress: strkContract.hexString,
-      entryPointSelector: call.entryPointSelector.hexString,
-      calldata: call.calldata.map { $0.hexString }
-    )
-    return ChainRequest(method: "starknet_call", params: [callParam, StarknetBlockId.latest])
+  public var publicKey: Data? {
+    try? StarkCurve.getPublicKey(privateKey: privateKey).bigEndianData
+  }
+
+  public var publicKeyFelt: Felt? {
+    guard let pubKey = publicKey else { return nil }
+    return Felt(pubKey)
+  }
+
+  public func sign(hash: Data) throws -> StarknetSignature {
+    try sign(feltHash: Felt(hash))
+  }
+
+  /// Sign a Felt message hash directly.
+  public func sign(feltHash: Felt) throws -> StarknetSignature {
+    try StarkCurve.sign(privateKey: privateKey, hash: feltHash)
   }
 
   public func sign(transaction: inout StarknetTransaction) throws {
-    try transaction.sign(with: signer)
+    let hash = try transaction.transactionHashFelt()
+    let sig = try sign(feltHash: hash)
+    switch transaction {
+    case .invokeV1(var tx):
+      tx.signature = sig.feltArray
+      transaction = .invokeV1(tx)
+    case .invokeV3(var tx):
+      tx.signature = sig.feltArray
+      transaction = .invokeV3(tx)
+    case .deployAccountV1(var tx):
+      tx.signature = sig.feltArray
+      transaction = .deployAccountV1(tx)
+    case .deployAccountV3(var tx):
+      tx.signature = sig.feltArray
+      transaction = .deployAccountV3(tx)
+    }
   }
 
   public func signMessage(_ message: Data) throws -> StarknetSignature {
-    try signer.sign(hash: message)
+    try sign(feltHash: Felt(message))
   }
 
-  public func sendTransactionRequest(_ transaction: StarknetTransaction) -> ChainRequest {
+  public func sendTransaction(_ transaction: StarknetTransaction) async throws -> TxHash {
+    let p = try requireProvider()
+    let request: ChainRequest
     switch transaction {
     case .invokeV1(let tx):
       let param = StarknetInvokeV1Param(tx: tx)
-      return ChainRequest(method: "starknet_addInvokeTransaction", params: [param])
+      request = ChainRequest(method: "starknet_addInvokeTransaction", params: [param])
     case .invokeV3(let tx):
       let param = StarknetInvokeV3Param(tx: tx)
-      return ChainRequest(method: "starknet_addInvokeTransaction", params: [param])
+      request = ChainRequest(method: "starknet_addInvokeTransaction", params: [param])
     case .deployAccountV1(let tx):
       let param = StarknetDeployAccountV1Param(tx: tx)
-      return ChainRequest(method: "starknet_addDeployAccountTransaction", params: [param])
+      request = ChainRequest(method: "starknet_addDeployAccountTransaction", params: [param])
     case .deployAccountV3(let tx):
       let param = StarknetDeployAccountV3Param(tx: tx)
-      return ChainRequest(method: "starknet_addDeployAccountTransaction", params: [param])
+      request = ChainRequest(method: "starknet_addDeployAccountTransaction", params: [param])
     }
+    let response: StarknetInvokeTransactionResponse = try await p.send(request: request)
+    return response.transactionHash
   }
 
   // MARK: - Build InvokeV1
@@ -120,12 +164,12 @@ public struct StarknetAccount: SignableAccount, Sendable {
     )
   }
 
-  // MARK: - Sign
+  // MARK: - Sign Specific Transactions
 
   /// Sign an InvokeV1 transaction and return a copy with the signature attached.
   public func signInvokeV1(_ tx: StarknetInvokeV1) throws -> StarknetInvokeV1 {
     let hash = try tx.transactionHash()
-    let sig = try signer.sign(feltHash: hash)
+    let sig = try sign(feltHash: hash)
     var signed = tx
     signed.signature = sig.feltArray
     return signed
@@ -134,7 +178,7 @@ public struct StarknetAccount: SignableAccount, Sendable {
   /// Sign an InvokeV3 transaction and return a copy with the signature attached.
   public func signInvokeV3(_ tx: StarknetInvokeV3) throws -> StarknetInvokeV3 {
     let hash = try tx.transactionHash()
-    let sig = try signer.sign(feltHash: hash)
+    let sig = try sign(feltHash: hash)
     var signed = tx
     signed.signature = sig.feltArray
     return signed
@@ -143,7 +187,7 @@ public struct StarknetAccount: SignableAccount, Sendable {
   /// Sign a DeployAccountV1 transaction and return a copy with the signature attached.
   public func signDeployAccountV1(_ tx: StarknetDeployAccountV1) throws -> StarknetDeployAccountV1 {
     let hash = try tx.transactionHash()
-    let sig = try signer.sign(feltHash: hash)
+    let sig = try sign(feltHash: hash)
     var signed = tx
     signed.signature = sig.feltArray
     return signed
@@ -152,7 +196,7 @@ public struct StarknetAccount: SignableAccount, Sendable {
   /// Sign a DeployAccountV3 transaction and return a copy with the signature attached.
   public func signDeployAccountV3(_ tx: StarknetDeployAccountV3) throws -> StarknetDeployAccountV3 {
     let hash = try tx.transactionHash()
-    let sig = try signer.sign(feltHash: hash)
+    let sig = try sign(feltHash: hash)
     var signed = tx
     signed.signature = sig.feltArray
     return signed
@@ -161,7 +205,6 @@ public struct StarknetAccount: SignableAccount, Sendable {
   // MARK: - Fee Estimation (batch)
 
   /// Estimate the fee for a batch of calls.
-  /// Builds a V3 invoke transaction, signs it, and sends to starknet_estimateFee.
   public func estimateFee(
     calls: [StarknetCall],
     nonce: Felt,
@@ -181,7 +224,6 @@ public struct StarknetAccount: SignableAccount, Sendable {
   // MARK: - Execute (batch)
 
   /// Execute a batch of calls: build V3 invoke, sign, and broadcast.
-  /// Returns the transaction hash.
   public func execute(
     calls: [StarknetCall],
     resourceBounds: StarknetResourceBoundsMapping,
@@ -235,7 +277,7 @@ public struct StarknetAccount: SignableAccount, Sendable {
 
   // MARK: - Private
 
-  private func requireProvider() throws -> StarknetProvider {
+  private func requireProvider() throws -> any Provider<Starknet> {
     guard let provider else {
       throw StarknetAccountError.noProvider
     }

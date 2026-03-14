@@ -200,7 +200,7 @@ final class EIP712Tests: XCTestCase {
   func testSignTypedData() throws {
     // Test private key
     let privateKey = Data(hex: "c85ef7d79691fe79573b1a7e708c2e5c5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e")
-    let signer = try EthereumSigner(privateKey: privateKey)
+    let account = try EthereumAccount(privateKey: privateKey)
 
     let domain = EIP712Domain(
       name: "Ether Mail",
@@ -240,16 +240,16 @@ final class EIP712Tests: XCTestCase {
       message: message
     )
 
-    let signature = try signer.signTypedData(typedData)
+    let signature = try account.signTypedData(typedData)
 
     XCTAssertEqual(signature.r.count, 32)
     XCTAssertEqual(signature.s.count, 32)
     XCTAssertTrue(signature.v == 27 || signature.v == 28)
 
-    // Verify signature can recover to signer address
+    // Verify signature can recover to account address
     let signHash = try typedData.signHash()
     let recovered = try signature.recoverAddress(from: signHash)
-    XCTAssertEqual(recovered, signer.address)
+    XCTAssertEqual(recovered, account.address)
   }
 
   // MARK: - Permit (ERC-2612)

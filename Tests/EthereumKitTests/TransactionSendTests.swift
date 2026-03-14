@@ -378,8 +378,8 @@ final class TransactionSendAnvilTests: XCTestCase {
     )
 
     // 4. Sign
-    let signer = try EthereumSigner(privateKey: privateKey)
-    try tx.sign(with: signer)
+    let account = try EthereumAccount(privateKey: privateKey)
+    try tx.sign(with: account)
 
     // 5. Send
     guard let rawTx = tx.rawTransaction else {
