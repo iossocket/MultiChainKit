@@ -910,8 +910,8 @@ let wallet = try MultiChainWallet(
 | `BlockTag`                                         | latest / pending / earliest / number                                         |
 | `EIP712TypedData` / `EIP712Domain` / `EIP712Value` | EIP-712 types and signHash()                                                 |
 | `PollingConfig`                                    | Polling interval and timeout for waitForTransaction                          |
-| `EthereumAccountError`                             | `.noProvider` — thrown when convenience methods lack a provider               |
-| `ContractError`                                    | Contract-specific errors (functionNotFound, argumentCountMismatch, etc.)      |
+| `ChainError`                                       | `.noProvider` (convenience methods lack provider), `.invalidTransaction`, `.invalidSignature`, `.transactionFailed`, etc. |
+| `ContractError`                                    | Contract-specific errors (functionNotFound, argumentCountMismatch, invalidType, insufficientData, etc.)      |
 
 ### 15.2 Starknet Types
 
@@ -939,8 +939,9 @@ let wallet = try MultiChainWallet(
 | `StarknetInvokeTransactionResponse`               | Invoke response; transactionHashFelt convenience                     |
 | `StarknetDecodedEvent`                            | Decoded event; name, keys dict, data dict                            |
 | `StarknetEventFilter`                             | Event filter for getEvents; fromBlock, toBlock, address, keys        |
-| `StarknetAccountError`                            | `.noProvider`, `.emptyFeeEstimate`                                   |
-| `StarknetContractError`                           | Contract-specific errors (functionNotFound, eventNotFound, etc.)      |
+| `ChainError`                                       | `.noProvider` (StarknetAccount without provider) — see also MultiChainCore errors |
+| `ProviderError`                                    | `.emptyResult` (e.g. fee estimate returns no results), `.timeout`, `.rpcError`, etc. |
+| `CairoABIError`                                    | Contract/value errors (functionNotFound, eventNotFound, outOfBounds, typeMismatch, etc.)      |
 
 ### 15.3 Wei Common API
 
@@ -1013,7 +1014,7 @@ All methods are static on `StarknetRequestBuilder`:
 **Ethereum:**
 
 - **Invalid private key/mnemonic:** Ensure private key is 32 bytes; mnemonic passes BIP39 validation and matches the derivation path.
-- **EthereumAccountError.noProvider:** Attach a provider to `EthereumSignableAccount` before calling `sendTransaction`, `prepareTransaction`, or `contract.write`. Pass it via the initializer: `EthereumSignableAccount(privateKey: data, provider: provider)`.
+- **ChainError.noProvider:** Attach a provider to `EthereumSignableAccount` before calling `sendTransaction`, `prepareTransaction`, or `contract.write`. Pass it via the initializer: `EthereumSignableAccount(privateKey: data, provider: provider)`.
 - **RPC returns 4xx/5xx:** Check URL, network, and RPC rate limits; use a custom `URLSession` if needed.
 - **Signing fails:** Use `EthereumSignableAccount`, call `sign(transaction:)` on a `var tx`, then use `tx.rawTransaction`.
 - **Contract call fails:** Verify ABI and function name/parameter types match the contract; write operations must be signed before `sendRawTransaction`.
@@ -1022,8 +1023,8 @@ All methods are static on `StarknetRequestBuilder`:
 **Starknet:**
 
 - **Invalid private key:** Stark private key must be non-zero and less than the curve order (~2^251).
-- **StarknetAccountError.noProvider:** Attach a provider to `StarknetAccount` before calling `executeV3`, `estimateFee`, or other network methods.
-- **StarknetAccountError.emptyFeeEstimate:** Fee estimation returned no results; check that the calls are valid and the account is deployed.
+- **ChainError.noProvider:** Attach a provider to `StarknetAccount` before calling `executeV3`, `estimateFee`, or other network methods.
+- **ProviderError.emptyResult:** Fee estimation returned no results; check that the calls are valid and the account is deployed.
 - **Transaction REJECTED/REVERTED:** Check the failure reason in `StarknetTransactionStatus`; common causes are insufficient fee, wrong nonce, or contract logic errors.
 - **Contract function not found:** Ensure the function name matches the ABI exactly; interface functions are flattened into the functions dict.
 - **Event decoding fails:** Event names are matched by short name (e.g. "Transfer", not the fully-qualified Cairo path).
