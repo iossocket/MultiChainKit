@@ -48,7 +48,7 @@ public struct StarknetAccount: Account, Sendable {
     provider: (any Provider<Starknet>)? = nil
   ) throws {
     guard BIP39.validate(mnemonic) else {
-      throw SignerError.invalidMnemonic
+      throw CryptoError.invalidMnemonic
     }
     let seed = try BIP39.seed(from: mnemonic, password: "")
     let key = try StarknetKeyDerivation.derivePrivateKey(seed: seed, path: path)
@@ -66,7 +66,7 @@ public struct StarknetAccount: Account, Sendable {
       throw StarkCurveError.invalidPrivateKey
     }
     guard let publicKey = try? StarkCurve.getPublicKey(privateKey: privateKey) else {
-      throw SignerError.publicKeyDerivationFailed
+      throw CryptoError.publicKeyDerivationFailed
     }
     let address = try accountType.computeAddress(publicKey: publicKey, salt: publicKey)
     try self.init(privateKey: privateKey, address: address, chain: chain, provider: provider)
@@ -233,7 +233,7 @@ public struct StarknetAccount: Account, Sendable {
     let request = StarknetRequestBuilder.estimateFeeRequest(invokeV3: signed)
     let results: [StarknetFeeEstimate] = try await p.send(request: request)
     guard let estimate = results.first else {
-      throw StarknetAccountError.emptyFeeEstimate
+      throw ProviderError.emptyResult
     }
     return estimate
   }
@@ -296,15 +296,8 @@ public struct StarknetAccount: Account, Sendable {
 
   private func requireProvider() throws -> any Provider<Starknet> {
     guard let provider else {
-      throw StarknetAccountError.noProvider
+      throw ChainError.noProvider
     }
     return provider
   }
-}
-
-// MARK: - StarknetAccountError
-
-public enum StarknetAccountError: Error, Sendable, Equatable {
-  case noProvider
-  case emptyFeeEstimate
 }

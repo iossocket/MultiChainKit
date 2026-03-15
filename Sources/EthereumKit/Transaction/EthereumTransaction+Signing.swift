@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import MultiChainCore
 
 extension EthereumTransaction {
 
@@ -24,7 +25,7 @@ extension EthereumTransaction {
 
   public func recoverSender() throws -> EthereumAddress {
     guard let signature else {
-      throw EthereumSignatureError.invalidSignature
+      throw ChainError.invalidSignature("transaction not signed")
     }
     return try signature.recoverAddress(from: hashForSigning())
   }

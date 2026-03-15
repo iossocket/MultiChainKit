@@ -7,10 +7,6 @@ import BigInt
 import Foundation
 import StarknetCrypto
 
-public enum StarknetHashError: Error {
-  case invalidElements
-}
-
 public enum Pedersen {
 
   /// Pedersen hash of two Felt values.

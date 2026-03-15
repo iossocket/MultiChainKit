@@ -357,7 +357,7 @@ struct StarknetContractEncodeCallTests {
   func functionNotFound() throws {
     let contract = try StarknetContract(
       address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
-    #expect(throws: StarknetContractError.self) {
+    #expect(throws: CairoABIError.self) {
       _ = try contract.encodeCall(function: "nonexistent")
     }
   }
@@ -366,7 +366,7 @@ struct StarknetContractEncodeCallTests {
   func argCountMismatch() throws {
     let contract = try StarknetContract(
       address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
-    #expect(throws: StarknetContractError.self) {
+    #expect(throws: CairoABIError.self) {
       _ = try contract.encodeCall(function: "transfer", args: [.contractAddress(Felt(0x1))])
     }
   }
@@ -441,25 +441,25 @@ struct StarknetContractDecodeEventTests {
   func eventNotFound() throws {
     let contract = try StarknetContract(
       address: Felt(0x1), abiJson: erc20ABI, provider: Self.provider)
-    #expect(throws: StarknetContractError.self) {
+    #expect(throws: CairoABIError.self) {
       _ = try contract.decodeEvent(name: "NonExistent", keys: [.zero], data: [])
     }
   }
 }
 
-// MARK: - StarknetContractError
+// MARK: - CairoABIError (contract-level cases)
 
-@Suite("StarknetContractError")
-struct StarknetContractErrorTests {
+@Suite("CairoABIError contract-level")
+struct CairoABIErrorContractTests {
 
   @Test("error cases are equatable")
   func equatable() {
-    #expect(StarknetContractError.functionNotFound("foo") == .functionNotFound("foo"))
-    #expect(StarknetContractError.eventNotFound("bar") == .eventNotFound("bar"))
+    #expect(CairoABIError.functionNotFound("foo") == .functionNotFound("foo"))
+    #expect(CairoABIError.eventNotFound("bar") == .eventNotFound("bar"))
     #expect(
-      StarknetContractError.argumentCountMismatch(expected: 2, got: 1)
+      CairoABIError.argumentCountMismatch(expected: 2, got: 1)
         == .argumentCountMismatch(expected: 2, got: 1))
-    #expect(StarknetContractError.invalidABI("bad") == .invalidABI("bad"))
+    #expect(CairoABIError.invalidABI("bad") == .invalidABI("bad"))
   }
 }
 
@@ -605,7 +605,7 @@ struct StarknetContractGetEventsValidationTests {
     do {
       _ = try await contract.getEvents(eventName: "NonExistent")
       Issue.record("Expected eventNotFound error")
-    } catch let error as StarknetContractError {
+    } catch let error as CairoABIError {
       #expect(error == .eventNotFound("NonExistent"))
     }
   }

@@ -461,7 +461,7 @@ final class ABIDecodeTests: XCTestCase {
     let data = Data(hex: "00000000000000000000000000000000")  // Only 16 bytes
 
     XCTAssertThrowsError(try ABIValue.decode(types: [.uint(256)], data: data)) { error in
-      XCTAssertTrue(error is ABIDecodingError)
+      XCTAssertTrue(error is ContractError)
     }
   }
 
@@ -473,7 +473,7 @@ final class ABIDecodeTests: XCTestCase {
     )
 
     XCTAssertThrowsError(try ABIValue.decode(types: [.string], data: data)) { error in
-      XCTAssertTrue(error is ABIDecodingError)
+      XCTAssertTrue(error is ContractError)
     }
   }
 }

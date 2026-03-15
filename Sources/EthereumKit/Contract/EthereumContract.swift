@@ -290,7 +290,7 @@ public struct DecodedLog: Sendable {
 
 // MARK: - ContractError
 
-public enum ContractError: Error, Sendable {
+public enum ContractError: Error, Sendable, Equatable, CustomStringConvertible {
   case invalidABI(String)
   case functionNotFound(String)
   case eventNotFound(String)
@@ -298,4 +298,27 @@ public enum ContractError: Error, Sendable {
   case invalidType(String)
   case emptyResult
   case typeMismatch(String)
+  // From ABIDecodingError
+  case insufficientData
+  case invalidOffset
+  case invalidLength
+  case invalidUtf8
+  case decodingTypeMismatch
+
+  public var description: String {
+    switch self {
+    case .invalidABI(let msg): return "Invalid ABI: \(msg)"
+    case .functionNotFound(let name): return "Function not found: \(name)"
+    case .eventNotFound(let name): return "Event not found: \(name)"
+    case .argumentCountMismatch(let expected, let got): return "Argument count mismatch: expected \(expected), got \(got)"
+    case .invalidType(let type): return "Invalid type: \(type)"
+    case .emptyResult: return "Empty result"
+    case .typeMismatch(let msg): return "Type mismatch: \(msg)"
+    case .insufficientData: return "Insufficient ABI data"
+    case .invalidOffset: return "Invalid ABI offset"
+    case .invalidLength: return "Invalid ABI length"
+    case .invalidUtf8: return "Invalid UTF-8 in ABI data"
+    case .decodingTypeMismatch: return "ABI decoding type mismatch"
+    }
+  }
 }

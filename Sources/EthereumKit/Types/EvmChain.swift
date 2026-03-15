@@ -51,7 +51,7 @@ public struct EvmChain: Chain, Sendable, Equatable, Hashable {
 
   public static let sepolia = EvmChain(
     chainId: 11_155_111, name: "Sepolia",
-    rpcURL: URL(string: "https://sepolia.infura.io/v3/b4f26c3c04454b23b2b2ddc293dd20d7")!,
+    rpcURL: URL(string: "https://sepolia.drpc.org")!,
     isTestnet: true, symbol: "ETH", decimals: 18,
     explorerURL: URL(string: "https://sepolia.etherscan.io")
   )

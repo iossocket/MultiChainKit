@@ -66,7 +66,7 @@ public struct StarknetContract: Sendable {
   /// Initialize from a JSON ABI string.
   public init(address: Felt, abiJson: String, provider: StarknetProvider) throws {
     guard let data = abiJson.data(using: .utf8) else {
-      throw StarknetContractError.invalidABI("Invalid UTF-8 string")
+      throw CairoABIError.invalidABI("Invalid UTF-8 string")
     }
     let items = try JSONDecoder().decode([StarknetABIItem].self, from: data)
     self.init(address: address, abi: items, provider: provider)
@@ -77,10 +77,10 @@ public struct StarknetContract: Sendable {
   /// Build a StarknetCall from function name and CairoValue arguments.
   public func encodeCall(function name: String, args: [CairoValue] = []) throws -> StarknetCall {
     guard let fn = functions[name] else {
-      throw StarknetContractError.functionNotFound(name)
+      throw CairoABIError.functionNotFound(name)
     }
     guard args.count == fn.inputs.count else {
-      throw StarknetContractError.argumentCountMismatch(expected: fn.inputs.count, got: args.count)
+      throw CairoABIError.argumentCountMismatch(expected: fn.inputs.count, got: args.count)
     }
     let calldata = CairoValue.encodeCalldata(args)
     let selector = StarknetKeccak.functionSelector(name)
@@ -107,10 +107,10 @@ public struct StarknetContract: Sendable {
     block: StarknetBlockId = .latest
   ) async throws -> [CairoValue] {
     guard let fn = functions[name] else {
-      throw StarknetContractError.functionNotFound(name)
+      throw CairoABIError.functionNotFound(name)
     }
     guard !fn.outputs.isEmpty else {
-      throw StarknetContractError.noOutputTypes(name)
+      throw CairoABIError.noOutputTypes(name)
     }
     let raw = try await callRaw(function: name, args: args, block: block)
     var results: [CairoValue] = []
@@ -150,10 +150,10 @@ public struct StarknetContract: Sendable {
     continuationToken: String? = nil
   ) async throws -> (events: [StarknetDecodedEvent], continuationToken: String?) {
     guard let event = events[eventName] else {
-      throw StarknetContractError.eventNotFound(eventName)
+      throw CairoABIError.eventNotFound(eventName)
     }
     guard event.kind == "struct", event.members != nil else {
-      throw StarknetContractError.unsupportedEventKind(event.kind)
+      throw CairoABIError.unsupportedEventKind(event.kind)
     }
 
     let selector = StarknetKeccak.hash(Data(eventName.utf8))
@@ -192,10 +192,10 @@ public struct StarknetContract: Sendable {
     data: [Felt]
   ) throws -> StarknetDecodedEvent {
     guard let event = events[name] else {
-      throw StarknetContractError.eventNotFound(name)
+      throw CairoABIError.eventNotFound(name)
     }
     guard event.kind == "struct", let members = event.members else {
-      throw StarknetContractError.unsupportedEventKind(event.kind)
+      throw CairoABIError.unsupportedEventKind(event.kind)
     }
 
     var decodedKeys: [String: CairoValue] = [:]
@@ -242,17 +242,6 @@ public struct StarknetContract: Sendable {
     }
     return fullName
   }
-}
-
-// MARK: - StarknetContractError
-
-public enum StarknetContractError: Error, Sendable, Equatable {
-  case invalidABI(String)
-  case functionNotFound(String)
-  case eventNotFound(String)
-  case argumentCountMismatch(expected: Int, got: Int)
-  case noOutputTypes(String)
-  case unsupportedEventKind(String)
 }
 
 // MARK: - Event Types

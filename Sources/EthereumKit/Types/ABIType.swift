@@ -79,7 +79,7 @@ extension ABIType {
         return .uint(256)  // uint defaults to uint256
       }
       guard let bits = Int(bitsStr), bits >= 8, bits <= 256, bits % 8 == 0 else {
-        throw ABITypeError.invalidType(s)
+        throw ContractError.invalidType(s)
       }
       return .uint(bits)
     }
@@ -91,7 +91,7 @@ extension ABIType {
         return .int(256)  // int defaults to int256
       }
       guard let bits = Int(bitsStr), bits >= 8, bits <= 256, bits % 8 == 0 else {
-        throw ABITypeError.invalidType(s)
+        throw ContractError.invalidType(s)
       }
       return .int(bits)
     }
@@ -103,7 +103,7 @@ extension ABIType {
         return .bytes  // dynamic bytes
       }
       guard let size = Int(sizeStr), size >= 1, size <= 32 else {
-        throw ABITypeError.invalidType(s)
+        throw ContractError.invalidType(s)
       }
       return .fixedBytes(size)
     }
@@ -117,7 +117,7 @@ extension ABIType {
     case "string":
       return .string
     default:
-      throw ABITypeError.invalidType(s)
+      throw ContractError.invalidType(s)
     }
   }
 
@@ -162,7 +162,7 @@ extension ABIType {
   /// Parse tuple type string
   private static func parseTuple(_ s: String) throws -> ABIType {
     guard s.hasPrefix("(") && s.hasSuffix(")") else {
-      throw ABITypeError.invalidType(s)
+      throw ContractError.invalidType(s)
     }
 
     let inner = String(s.dropFirst().dropLast())
@@ -233,13 +233,6 @@ extension ABIType {
       return "(\(inner))"
     }
   }
-}
-
-// MARK: - ABITypeError
-
-public enum ABITypeError: Error, Sendable {
-  case invalidType(String)
-  case invalidTuple(String)
 }
 
 // MARK: - ABIItem

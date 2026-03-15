@@ -39,7 +39,7 @@ public struct MultiChainWallet: Sendable {
     let seed = try BIP39.seed(from: mnemonic, password: "")
     let starkPrivateKey = try StarknetKeyDerivation.derivePrivateKey(seed: seed, path: starknetPath)
     guard let pubKey = try? StarkCurve.getPublicKey(privateKey: starkPrivateKey) else {
-      throw SignerError.publicKeyDerivationFailed
+      throw CryptoError.publicKeyDerivationFailed
     }
     let address = try starknetAccountType.computeAddress(publicKey: pubKey, salt: pubKey)
     self.starknet = try StarknetAccount(

@@ -301,7 +301,7 @@ struct StarknetAccountTests {
     do {
       _ = try await account.estimateFee(calls: [call], nonce: .zero)
       Issue.record("Expected noProvider error")
-    } catch let error as StarknetAccountError {
+    } catch let error as ChainError {
       #expect(error == .noProvider)
     }
   }
@@ -317,7 +317,7 @@ struct StarknetAccountTests {
     do {
       _ = try await account.execute(calls: [call], resourceBounds: .zero, nonce: .zero)
       Issue.record("Expected noProvider error")
-    } catch let error as StarknetAccountError {
+    } catch let error as ChainError {
       #expect(error == .noProvider)
     }
   }
@@ -452,17 +452,75 @@ struct StarknetAccountTests {
 
     #expect(ozAccount.address != argentAccount.address)
   }
-}
 
-// MARK: - StarknetAccountError
+  // MARK: - Init with mnemonic
 
-@Suite("StarknetAccountError")
-struct StarknetAccountErrorTests {
+  @Test("mnemonic init matches manual key derivation")
+  func mnemonicInitMatchesManual() throws {
+    let mnemonic =
+      "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+    let seed = try BIP39.seed(from: mnemonic, password: "")
+    let key = try StarknetKeyDerivation.derivePrivateKey(seed: seed, path: .starknet)
+    let pubKey = try StarkCurve.getPublicKey(privateKey: key)
+    let address = try OpenZeppelinAccount().computeAddress(
+      publicKey: pubKey, salt: pubKey)
 
-  @Test("error cases are equatable")
-  func equatable() {
-    #expect(StarknetAccountError.noProvider == .noProvider)
-    #expect(StarknetAccountError.emptyFeeEstimate == .emptyFeeEstimate)
-    #expect(StarknetAccountError.noProvider != .emptyFeeEstimate)
+    let account = try StarknetAccount(
+      mnemonic: mnemonic, path: .starknet, address: address, chain: .sepolia)
+
+    #expect(account.publicKeyFelt == pubKey)
+    #expect(account.address == address)
+  }
+
+  @Test("mnemonic init produces same address as accountType init")
+  func mnemonicMatchesAccountTypeInit() throws {
+    let mnemonic =
+      "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+    let seed = try BIP39.seed(from: mnemonic, password: "")
+    let key = try StarknetKeyDerivation.derivePrivateKey(seed: seed, path: .starknet)
+
+    // accountType init derives address automatically
+    let autoAccount = try StarknetAccount(privateKey: key, chain: .sepolia)
+
+    // mnemonic init with manually computed address
+    let pubKey = try StarkCurve.getPublicKey(privateKey: key)
+    let address = try OpenZeppelinAccount().computeAddress(
+      publicKey: pubKey, salt: pubKey)
+    let mnemonicAccount = try StarknetAccount(
+      mnemonic: mnemonic, path: .starknet, address: address, chain: .sepolia)
+
+    #expect(autoAccount.address == mnemonicAccount.address)
+    #expect(autoAccount.publicKey == mnemonicAccount.publicKey)
+  }
+
+  @Test("mnemonic init with invalid mnemonic throws")
+  func mnemonicInitInvalidThrows() {
+    #expect(throws: CryptoError.self) {
+      try StarknetAccount(
+        mnemonic: "not a valid mnemonic",
+        path: .starknet,
+        address: StarknetAddress("0xabc")!,
+        chain: .sepolia)
+    }
+  }
+
+  @Test("mnemonic init can sign and verify")
+  func mnemonicInitCanSign() throws {
+    let mnemonic =
+      "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+    let seed = try BIP39.seed(from: mnemonic, password: "")
+    let key = try StarknetKeyDerivation.derivePrivateKey(seed: seed, path: .starknet)
+    let pubKey = try StarkCurve.getPublicKey(privateKey: key)
+    let address = try OpenZeppelinAccount().computeAddress(
+      publicKey: pubKey, salt: pubKey)
+
+    let account = try StarknetAccount(
+      mnemonic: mnemonic, path: .starknet, address: address, chain: .sepolia)
+
+    let hash = Felt(0xdead_beef)
+    let sig = try account.sign(feltHash: hash)
+    let valid = try StarkCurve.verify(
+      publicKey: account.publicKeyFelt!, hash: hash, r: sig.r, s: sig.s)
+    #expect(valid)
   }
 }

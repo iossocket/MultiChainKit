@@ -17,26 +17,6 @@ public protocol MnemonicSigner {
   init(mnemonic: String, path: DerivationPath) throws
 }
 
-// MARK: - SignerError
-
-public enum SignerError: Error, Sendable, CustomStringConvertible {
-  case invalidPrivateKey
-  case invalidMnemonic
-  case invalidPath(String)
-  case signingFailed(String)
-  case publicKeyDerivationFailed
-
-  public var description: String {
-    switch self {
-    case .invalidPrivateKey: return "Invalid private key"
-    case .invalidMnemonic: return "Invalid mnemonic phrase"
-    case .invalidPath(let path): return "Invalid derivation path: \(path)"
-    case .signingFailed(let reason): return "Signing failed: \(reason)"
-    case .publicKeyDerivationFailed: return "Failed to derive public key"
-    }
-  }
-}
-
 // MARK: - DerivationPath
 
 /// BIP32 HD wallet derivation path (e.g. m/44'/60'/0'/0/0).

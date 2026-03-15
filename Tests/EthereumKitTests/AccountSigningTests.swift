@@ -35,7 +35,7 @@ final class EthereumAccountSigningTests: XCTestCase {
     let invalidKey = Data(repeating: 0, count: 32)
 
     XCTAssertThrowsError(try EthereumAccount(privateKey: invalidKey)) { error in
-      XCTAssertTrue(error is SignerError)
+      XCTAssertTrue(error is CryptoError)
     }
   }
 
@@ -159,7 +159,7 @@ final class EthereumAccountSigningTests: XCTestCase {
 
   func testInvalidMnemonicThrows() {
     XCTAssertThrowsError(try EthereumAccount(mnemonic: "not a valid mnemonic", path: .ethereum)) { error in
-      XCTAssertTrue(error is SignerError)
+      XCTAssertTrue(error is CryptoError)
     }
   }
 }

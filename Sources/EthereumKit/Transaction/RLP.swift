@@ -10,11 +10,20 @@ import Foundation
 
 // MARK: - RLPError
 
-public enum RLPError: Error {
+public enum RLPError: Error, Sendable, Equatable, CustomStringConvertible {
   case emptyInput
   case invalidFormat
   case truncatedData
   case invalidLength
+
+  public var description: String {
+    switch self {
+    case .emptyInput: return "Empty RLP input"
+    case .invalidFormat: return "Invalid RLP format"
+    case .truncatedData: return "Truncated RLP data"
+    case .invalidLength: return "Invalid RLP length"
+    }
+  }
 }
 
 // MARK: - RLPItem

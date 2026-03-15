@@ -9,16 +9,6 @@
 import BigInt
 import Foundation
 
-// MARK: - ABIDecodingError
-
-public enum ABIDecodingError: Error, Sendable {
-  case insufficientData
-  case invalidOffset
-  case invalidLength
-  case invalidUtf8
-  case typeMismatch
-}
-
 // MARK: - ABI Decoding
 
 extension ABIValue {
@@ -31,7 +21,7 @@ extension ABIValue {
   public static func decode(type: ABIType, data: Data) throws -> ABIValue {
     let results = try decode(types: [type], data: data)
     guard let first = results.first else {
-      throw ABIDecodingError.insufficientData
+      throw ContractError.insufficientData
     }
     return first
   }
@@ -81,7 +71,7 @@ private struct ABIDecoder {
       if info.isDynamic {
         // Decode from tail
         guard let tailOffset = info.tailOffset else {
-          throw ABIDecodingError.invalidOffset
+          throw ContractError.invalidOffset
         }
         let value = try decodeType(info.type, at: tailOffset)
         results.append(value)
@@ -145,7 +135,7 @@ private struct ABIDecoder {
   func decodeDynamicBytes(at offset: Int) throws -> ABIValue {
     let length = try readUint256At(offset: offset)
     guard length <= Int.max else {
-      throw ABIDecodingError.invalidLength
+      throw ContractError.invalidLength
     }
     let bytesOffset = offset + 32
     let bytes = try readBytesAt(offset: bytesOffset, count: Int(length))
@@ -155,12 +145,12 @@ private struct ABIDecoder {
   func decodeString(at offset: Int) throws -> ABIValue {
     let length = try readUint256At(offset: offset)
     guard length <= Int.max else {
-      throw ABIDecodingError.invalidLength
+      throw ContractError.invalidLength
     }
     let bytesOffset = offset + 32
     let bytes = try readBytesAt(offset: bytesOffset, count: Int(length))
     guard let string = String(data: bytes, encoding: .utf8) else {
-      throw ABIDecodingError.invalidUtf8
+      throw ContractError.invalidUtf8
     }
     return .string(string)
   }
@@ -168,7 +158,7 @@ private struct ABIDecoder {
   func decodeDynamicArray(elementType: ABIType, at offset: Int) throws -> ABIValue {
     let length = try readUint256At(offset: offset)
     guard length <= Int.max else {
-      throw ABIDecodingError.invalidLength
+      throw ContractError.invalidLength
     }
 
     let count = Int(length)
@@ -264,7 +254,7 @@ private struct ABIDecoder {
 
   func readBytesAt(offset: Int, count: Int) throws -> Data {
     guard offset >= 0, offset + count <= data.count else {
-      throw ABIDecodingError.insufficientData
+      throw ContractError.insufficientData
     }
     return data[offset..<(offset + count)]
   }

@@ -52,13 +52,37 @@ public indirect enum CairoType: Sendable, Equatable {
 
 // MARK: - CairoABIError
 
-public enum CairoABIError: Error, Sendable {
+public enum CairoABIError: Error, Sendable, Equatable, CustomStringConvertible {
   case outOfBounds(expected: Int, available: Int)
   case invalidBool(Felt)
   case invalidByteArray
   case invalidOptionVariant(Felt)
   case typeMismatch(expected: CairoType, got: CairoValue)
   case unknownType(String)
+  // Contract-level (merged from StarknetContractError)
+  case invalidABI(String)
+  case functionNotFound(String)
+  case eventNotFound(String)
+  case argumentCountMismatch(expected: Int, got: Int)
+  case noOutputTypes(String)
+  case unsupportedEventKind(String)
+
+  public var description: String {
+    switch self {
+    case .outOfBounds(let expected, let available): return "Cairo ABI out of bounds: expected \(expected), available \(available)"
+    case .invalidBool(let felt): return "Invalid Cairo bool value: \(felt.hexString)"
+    case .invalidByteArray: return "Invalid Cairo byte array"
+    case .invalidOptionVariant(let felt): return "Invalid Cairo option variant: \(felt.hexString)"
+    case .typeMismatch(let expected, let got): return "Cairo ABI type mismatch: expected \(expected), got \(got)"
+    case .unknownType(let s): return "Cairo unknown type: \(s)"
+    case .invalidABI(let msg): return "Invalid Cairo ABI: \(msg)"
+    case .functionNotFound(let name): return "Cairo function not found: \(name)"
+    case .eventNotFound(let name): return "Cairo event not found: \(name)"
+    case .argumentCountMismatch(let expected, let got): return "Cairo argument count mismatch: expected \(expected), got \(got)"
+    case .noOutputTypes(let name): return "Cairo function has no output types: \(name)"
+    case .unsupportedEventKind(let kind): return "Cairo unsupported event kind: \(kind)"
+    }
+  }
 }
 
 // MARK: - CairoType Parsing

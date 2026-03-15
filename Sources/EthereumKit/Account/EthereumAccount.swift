@@ -28,7 +28,7 @@ public struct EthereumAccount: Account, PrivateKeySigner, MnemonicSigner, Sendab
 
   public init(privateKey: Data, provider: (any Provider<EvmChain>)?) throws {
     guard (try? Secp256k1.publicKey(from: privateKey)) != nil else {
-      throw SignerError.invalidPrivateKey
+      throw CryptoError.invalidPrivateKey
     }
     self.privateKey = privateKey
     self.provider = provider
@@ -36,7 +36,7 @@ public struct EthereumAccount: Account, PrivateKeySigner, MnemonicSigner, Sendab
 
   public init(mnemonic: String, path: DerivationPath, provider: (any Provider<EvmChain>)?) throws {
     guard BIP39.validate(mnemonic) else {
-      throw SignerError.invalidMnemonic
+      throw CryptoError.invalidMnemonic
     }
     let seed = try BIP39.seed(from: mnemonic, password: "")
     let key = try BIP32.derive(seed: seed, path: path)
@@ -58,7 +58,7 @@ public struct EthereumAccount: Account, PrivateKeySigner, MnemonicSigner, Sendab
       let sigData = try Secp256k1.sign(message: hash, privateKey: privateKey)
       return try EthereumSignature(data: sigData)
     } catch {
-      throw SignerError.signingFailed("\(error)")
+      throw CryptoError.signingFailed(error.localizedDescription)
     }
   }
 
@@ -85,7 +85,7 @@ public struct EthereumAccount: Account, PrivateKeySigner, MnemonicSigner, Sendab
 
   public func signMessage(_ message: String) throws -> EthereumSignature {
     guard let data = message.data(using: .utf8) else {
-      throw SignerError.signingFailed("invalid UTF-8")
+      throw CryptoError.signingFailed("Invalid UTF-8 string")
     }
     return try signMessage(data)
   }
@@ -184,14 +184,8 @@ public struct EthereumAccount: Account, PrivateKeySigner, MnemonicSigner, Sendab
 
   private func requireProvider() throws -> any Provider<EvmChain> {
     guard let provider else {
-      throw EthereumAccountError.noProvider
+      throw ChainError.noProvider
     }
     return provider
   }
-}
-
-// MARK: - EthereumAccountError
-
-public enum EthereumAccountError: Error, Sendable, Equatable {
-  case noProvider
 }

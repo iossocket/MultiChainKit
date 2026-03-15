@@ -142,7 +142,7 @@ public struct ABIEvent: Sendable {
 
   private func decodeIndexedValue(_ data: Data, type: String) throws -> ABIValue {
     guard let abiType = try? ABIType.parse(type) else {
-      throw ABIDecodingError.typeMismatch
+      throw ContractError.decodingTypeMismatch
     }
 
     // For indexed dynamic types, we only have the hash

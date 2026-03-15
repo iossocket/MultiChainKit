@@ -372,10 +372,20 @@ public enum SNIP12 {
 
 // MARK: - SNIP12Error
 
-public enum SNIP12Error: Error, Sendable, Equatable {
+public enum SNIP12Error: Error, Sendable, Equatable, CustomStringConvertible {
   case unknownType(String)
   case missingField(String)
   case typeMismatch(expected: String, got: String)
   case unsupportedType(String)
   case stringTooLong
+
+  public var description: String {
+    switch self {
+    case .unknownType(let type): return "SNIP-12 unknown type: \(type)"
+    case .missingField(let field): return "SNIP-12 missing field: \(field)"
+    case .typeMismatch(let expected, let got): return "SNIP-12 type mismatch: expected \(expected), got \(got)"
+    case .unsupportedType(let type): return "SNIP-12 unsupported type: \(type)"
+    case .stringTooLong: return "SNIP-12 string too long"
+    }
+  }
 }

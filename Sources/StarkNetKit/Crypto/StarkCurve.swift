@@ -8,12 +8,22 @@ import Foundation
 import MultiChainCore
 import StarknetCrypto
 
-public enum StarkCurveError: Error, Sendable {
+public enum StarkCurveError: Error, Sendable, Equatable, CustomStringConvertible {
   case invalidPrivateKey
   case invalidPublicKey
   case signingFailed
   case verifyFailed
   case deserializationError
+
+  public var description: String {
+    switch self {
+    case .invalidPrivateKey: return "Invalid Stark curve private key"
+    case .invalidPublicKey: return "Invalid Stark curve public key"
+    case .signingFailed: return "Stark curve signing failed"
+    case .verifyFailed: return "Stark curve verification failed"
+    case .deserializationError: return "Stark curve deserialization error"
+    }
+  }
 }
 
 public struct StarknetSignature: ChainSignature, Sendable, Equatable {

@@ -18,22 +18,24 @@ public protocol Provider<C>: Sendable where C: Chain {
 
 // MARK: - ProviderError
 
-public enum ProviderError: Error, Sendable, CustomStringConvertible {
+public enum ProviderError: Error, Sendable, Equatable, CustomStringConvertible {
   case networkError(String)
   case rpcError(code: Int, message: String)
   case decodingError(String)
   case invalidResponse
   case timeout
   case emptyBatchRequest
+  case emptyResult
 
   public var description: String {
     switch self {
-    case .networkError(let message): return "Network error: \(message)"
+    case .networkError(let msg): return "Network error: \(msg)"
     case .rpcError(let code, let message): return "RPC error \(code): \(message)"
-    case .decodingError(let message): return "Decoding error: \(message)"
+    case .decodingError(let msg): return "Decoding error: \(msg)"
     case .invalidResponse: return "Invalid response"
-    case .timeout: return "Request timed out"
+    case .timeout: return "Timeout"
     case .emptyBatchRequest: return "Empty batch request"
+    case .emptyResult: return "Empty result"
     }
   }
 }

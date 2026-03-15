@@ -356,9 +356,18 @@ public enum EIP712 {
 
 // MARK: - EIP712Error
 
-public enum EIP712Error: Error, Sendable {
+public enum EIP712Error: Error, Sendable, Equatable, CustomStringConvertible {
   case unknownType(String)
   case missingField(String)
   case typeMismatch(expected: String, got: String)
   case unsupportedType(String)
+
+  public var description: String {
+    switch self {
+    case .unknownType(let type): return "EIP-712 unknown type: \(type)"
+    case .missingField(let field): return "EIP-712 missing field: \(field)"
+    case .typeMismatch(let expected, let got): return "EIP-712 type mismatch: expected \(expected), got \(got)"
+    case .unsupportedType(let type): return "EIP-712 unsupported type: \(type)"
+    }
+  }
 }

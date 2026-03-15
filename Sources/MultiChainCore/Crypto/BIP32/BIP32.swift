@@ -9,15 +9,6 @@ import BigInt
 import CryptoSwift
 import Foundation
 
-// MARK: - BIP32Error
-
-public enum BIP32Error: Error, Sendable {
-  case invalidSeedLength
-  case invalidPrivateKey
-  case derivationFailed
-  case invalidPublicKey
-}
-
 // MARK: - ExtendedKey
 
 public struct ExtendedKey: Sendable {
@@ -47,7 +38,7 @@ public enum BIP32 {
 
   public static func masterKey(seed: Data) throws -> ExtendedKey {
     guard seed.count >= 16 && seed.count <= 64 else {
-      throw BIP32Error.invalidSeedLength
+      throw CryptoError.invalidSeedLength
     }
 
     let hmac = HMAC(key: Array("Bitcoin seed".utf8), variant: .sha2(.sha512))
@@ -58,7 +49,7 @@ public enum BIP32 {
 
     let keyInt = BigUInt(Data(privateKey))
     guard keyInt > 0 && keyInt < curveOrder else {
-      throw BIP32Error.invalidPrivateKey
+      throw CryptoError.invalidPrivateKey
     }
 
     return ExtendedKey(privateKey: privateKey, chainCode: chainCode)
@@ -93,7 +84,7 @@ public enum BIP32 {
     let childKeyInt = (ilInt + parentKeyInt) % curveOrder
 
     guard ilInt < curveOrder && childKeyInt > 0 else {
-      throw BIP32Error.derivationFailed
+      throw CryptoError.derivationFailed
     }
 
     let childKeyData = childKeyInt.serialize().padLeft(toLength: 32)
@@ -120,7 +111,7 @@ public enum BIP32 {
     let privateKeyInt = BigUInt(Data(key.privateKey))
 
     guard privateKeyInt > 0 && privateKeyInt < curveOrder else {
-      throw BIP32Error.invalidPrivateKey
+      throw CryptoError.invalidPrivateKey
     }
 
     let (x, y) = pointMultiply(k: privateKeyInt, px: Gx, py: Gy)

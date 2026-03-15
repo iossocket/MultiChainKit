@@ -5,56 +5,34 @@
 
 import Foundation
 
-// MARK: - ChainError
-
-public enum ChainError: Error, Sendable, CustomStringConvertible {
-  case invalidAddress(String)
+public enum ChainError: Error, Sendable, Equatable, CustomStringConvertible {
+  case invalidAddress
   case invalidTransaction(String)
   case invalidSignature(String)
-  case transactionFailed(reason: String, txHash: String? = nil)
-  case encodingError(String)
-  case decodingError(String)
-  case valueOutOfRange(String)
+  case transactionFailed(reason: String, txHash: String)
+  case encodingError
+  case decodingError
+  case valueOutOfRange
   case accountNotDeployed
   case insufficientBalance
   case invalidNonce
-  case other(String)
+  case noProvider
+  case other
 
   public var description: String {
     switch self {
-    case .invalidAddress(let address): return "Invalid address: \(address)"
-    case .invalidTransaction(let reason): return "Invalid transaction: \(reason)"
-    case .invalidSignature(let reason): return "Invalid signature: \(reason)"
-    case .transactionFailed(let reason, let txHash):
-      if let txHash {
-        return "Transaction \(txHash) failed: \(reason)"
-      }
-      return "Transaction failed: \(reason)"
-    case .encodingError(let reason): return "Encoding error: \(reason)"
-    case .decodingError(let reason): return "Decoding error: \(reason)"
-    case .valueOutOfRange(let reason): return "Value out of range: \(reason)"
+    case .invalidAddress: return "Invalid address"
+    case .invalidTransaction(let msg): return "Invalid transaction: \(msg)"
+    case .invalidSignature(let msg): return "Invalid signature: \(msg)"
+    case .transactionFailed(let reason, let txHash): return "Transaction failed (\(reason)), txHash: \(txHash)"
+    case .encodingError: return "Encoding error"
+    case .decodingError: return "Decoding error"
+    case .valueOutOfRange: return "Value out of range"
     case .accountNotDeployed: return "Account not deployed"
     case .insufficientBalance: return "Insufficient balance"
     case .invalidNonce: return "Invalid nonce"
-    case .other(let message): return message
-    }
-  }
-}
-
-// MARK: - WalletError
-
-public enum WalletError: Error, Sendable, CustomStringConvertible {
-  case invalidMnemonic
-  case notConnected(String)
-  case unsupportedChain(String)
-  case accountNotAvailable
-
-  public var description: String {
-    switch self {
-    case .invalidMnemonic: return "Invalid mnemonic"
-    case .notConnected(let chain): return "Not connected to \(chain)"
-    case .unsupportedChain(let chain): return "Unsupported chain: \(chain)"
-    case .accountNotAvailable: return "Account not available"
+    case .noProvider: return "No provider"
+    case .other: return "Other error"
     }
   }
 }

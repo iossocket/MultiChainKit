@@ -225,7 +225,7 @@ final class BIP39Tests: XCTestCase {
   func testInvalidEntropySize_TooSmall() {
     let entropy = Data(hexString: "00000000000000000000000000")!  // 104 bits
     XCTAssertThrowsError(try BIP39.mnemonicFromEntropy(entropy)) { error in
-      guard case BIP39Error.invalidEntropySize = error else {
+      guard case CryptoError.invalidEntropySize = error else {
         XCTFail("Expected invalidEntropySize error")
         return
       }
@@ -236,7 +236,7 @@ final class BIP39Tests: XCTestCase {
     let entropy = Data(
       hexString: "000000000000000000000000000000000000000000000000000000000000000000")!  // 264 bits
     XCTAssertThrowsError(try BIP39.mnemonicFromEntropy(entropy)) { error in
-      guard case BIP39Error.invalidEntropySize = error else {
+      guard case CryptoError.invalidEntropySize = error else {
         XCTFail("Expected invalidEntropySize error")
         return
       }
@@ -246,7 +246,7 @@ final class BIP39Tests: XCTestCase {
   func testInvalidEntropySize_NotMultipleOf32() {
     let entropy = Data(hexString: "0000000000000000000000000000000000")!  // 136 bits
     XCTAssertThrowsError(try BIP39.mnemonicFromEntropy(entropy)) { error in
-      guard case BIP39Error.invalidEntropySize = error else {
+      guard case CryptoError.invalidEntropySize = error else {
         XCTFail("Expected invalidEntropySize error")
         return
       }

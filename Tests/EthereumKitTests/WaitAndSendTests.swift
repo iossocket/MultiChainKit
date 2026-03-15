@@ -53,16 +53,6 @@ final class OptionalResultTests: XCTestCase {
   }
 }
 
-// MARK: - EthereumAccountError Tests
-
-final class EthereumAccountErrorTests: XCTestCase {
-
-  func testNoProviderError() {
-    let error = EthereumAccountError.noProvider
-    XCTAssertEqual(error, EthereumAccountError.noProvider)
-  }
-}
-
 // MARK: - waitForTransaction Signature Tests
 
 final class EthereumWaitForTransactionTests: XCTestCase {

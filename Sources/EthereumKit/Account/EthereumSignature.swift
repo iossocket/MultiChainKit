@@ -7,11 +7,6 @@ import Foundation
 import MultiChainCore
 import P256K
 
-public enum EthereumSignatureError: Error {
-  case invalidSignature
-  case invalidInputMessage
-}
-
 public struct EthereumSignature: ChainSignature, Sendable, Equatable {
   public let r: Data
   public let s: Data
@@ -27,7 +22,7 @@ public struct EthereumSignature: ChainSignature, Sendable, Equatable {
 
   public init(data: Data) throws {
     if data.count != EthereumKitConstants.EthereumSignatureLength {
-      throw EthereumSignatureError.invalidSignature
+      throw ChainError.invalidSignature("invalid signature data")
     }
     let startIndexOfR = data.startIndex
     let startIndexOfS = data.index(startIndexOfR, offsetBy: 32)

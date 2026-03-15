@@ -30,17 +30,6 @@ public enum BIP39Language: String, CaseIterable, Sendable {
   }
 }
 
-// MARK: - BIP39Error
-
-public enum BIP39Error: Error, Sendable {
-  case invalidEntropySize(Int)
-  case entropyGenerationFailed
-  case invalidMnemonic
-  case invalidChecksumLength
-  case checksumMismatch
-  case seedGenerationFailed
-}
-
 // MARK: - BIP39
 
 public enum BIP39 {
@@ -69,13 +58,13 @@ public enum BIP39 {
   ) throws -> [String] {
     let entropyBits = entropy.count * 8
     guard entropyBits >= 128, entropyBits <= 256, entropyBits % 32 == 0 else {
-      throw BIP39Error.invalidEntropySize(entropyBits)
+      throw CryptoError.invalidEntropySize(entropyBits)
     }
 
     let checksumLength = entropyBits / 32
     let hash = entropy.sha256()
     guard let checksumBits = bitsFromData(hash, count: checksumLength) else {
-      throw BIP39Error.invalidChecksumLength
+      throw CryptoError.invalidChecksumLength
     }
 
     let entropyBitString = bitStringFromData(entropy)
@@ -93,7 +82,7 @@ public enum BIP39 {
               combinedBits.startIndex, offsetBy: endIndex)])
 
       guard let index = Int(chunk, radix: 2), index < wordList.count else {
-        throw BIP39Error.invalidMnemonic
+        throw CryptoError.invalidMnemonic
       }
       words.append(wordList[index])
     }
@@ -125,7 +114,7 @@ public enum BIP39 {
     language: BIP39Language = .english
   ) throws -> Data {
     guard words.count >= 12, words.count <= 24, words.count % 3 == 0 else {
-      throw BIP39Error.invalidMnemonic
+      throw CryptoError.invalidMnemonic
     }
 
     let wordList = language.words
@@ -133,7 +122,7 @@ public enum BIP39 {
     var bitString = ""
     for word in words {
       guard let index = wordList.firstIndex(of: word) else {
-        throw BIP39Error.invalidMnemonic
+        throw CryptoError.invalidMnemonic
       }
       let bits = String(index, radix: 2)
       bitString += String(repeating: "0", count: 11 - bits.count) + bits
@@ -146,16 +135,16 @@ public enum BIP39 {
     let checksumBits = String(bitString.suffix(checksumLength))
 
     guard let entropy = dataFromBitString(entropyBits) else {
-      throw BIP39Error.invalidMnemonic
+      throw CryptoError.invalidMnemonic
     }
 
     let hash = entropy.sha256()
     guard let expectedChecksum = bitsFromData(hash, count: checksumLength) else {
-      throw BIP39Error.invalidChecksumLength
+      throw CryptoError.invalidChecksumLength
     }
 
     guard checksumBits == expectedChecksum else {
-      throw BIP39Error.checksumMismatch
+      throw CryptoError.checksumMismatch
     }
 
     return entropy
@@ -166,12 +155,12 @@ public enum BIP39 {
   public static func seed(from mnemonic: String, password: String = "") throws -> Data {
     guard let mnemonicData = mnemonic.decomposedStringWithCompatibilityMapping.data(using: .utf8)
     else {
-      throw BIP39Error.seedGenerationFailed
+      throw CryptoError.seedGenerationFailed
     }
 
     let salt = "mnemonic" + password
     guard let saltData = salt.decomposedStringWithCompatibilityMapping.data(using: .utf8) else {
-      throw BIP39Error.seedGenerationFailed
+      throw CryptoError.seedGenerationFailed
     }
 
     do {
@@ -184,7 +173,7 @@ public enum BIP39 {
       ).calculate()
       return Data(seed)
     } catch {
-      throw BIP39Error.seedGenerationFailed
+      throw CryptoError.seedGenerationFailed
     }
   }
 
@@ -192,7 +181,7 @@ public enum BIP39 {
 
   private static func generateEntropy(bits: Int) throws -> Data {
     guard bits >= 128, bits <= 256, bits % 32 == 0 else {
-      throw BIP39Error.invalidEntropySize(bits)
+      throw CryptoError.invalidEntropySize(bits)
     }
 
     let byteCount = bits / 8
@@ -200,7 +189,7 @@ public enum BIP39 {
     let status = SecRandomCopyBytes(kSecRandomDefault, byteCount, &bytes)
 
     guard status == errSecSuccess else {
-      throw BIP39Error.entropyGenerationFailed
+      throw CryptoError.entropyGenerationFailed
     }
 
     return Data(bytes)

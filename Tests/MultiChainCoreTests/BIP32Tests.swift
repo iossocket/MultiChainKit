@@ -160,7 +160,7 @@ final class BIP32Tests: XCTestCase {
     let shortSeed = Data([0x00, 0x01, 0x02])  // Too short
 
     XCTAssertThrowsError(try BIP32.masterKey(seed: shortSeed)) { error in
-      guard case BIP32Error.invalidSeedLength = error else {
+      guard case CryptoError.invalidSeedLength = error else {
         XCTFail("Expected invalidSeedLength error")
         return
       }
@@ -171,7 +171,7 @@ final class BIP32Tests: XCTestCase {
     let longSeed = Data(repeating: 0x00, count: 65)  // Too long (max 64)
 
     XCTAssertThrowsError(try BIP32.masterKey(seed: longSeed)) { error in
-      guard case BIP32Error.invalidSeedLength = error else {
+      guard case CryptoError.invalidSeedLength = error else {
         XCTFail("Expected invalidSeedLength error")
         return
       }

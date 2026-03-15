@@ -6,11 +6,20 @@
 import Foundation
 import P256K
 
-public enum Secp256k1Error: Error {
+public enum Secp256k1Error: Error, Sendable, Equatable, CustomStringConvertible {
   case invalidPrivateKey
   case invalidPublicKey
   case signingFailed
   case recoveryFailed
+
+  public var description: String {
+    switch self {
+    case .invalidPrivateKey: return "Invalid private key"
+    case .invalidPublicKey: return "Invalid public key"
+    case .signingFailed: return "Signing failed"
+    case .recoveryFailed: return "Recovery failed"
+    }
+  }
 }
 
 public enum Secp256k1 {
