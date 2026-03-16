@@ -72,6 +72,17 @@ public struct StarknetContract: Sendable {
     self.init(address: address, abi: items, provider: provider)
   }
 
+  public init(address: String, abiJson: String, provider: StarknetProvider) throws {
+    guard let addressFelt = Felt(address) else {
+      throw ChainError.invalidAddress
+    }
+    guard let data = abiJson.data(using: .utf8) else {
+      throw CairoABIError.invalidABI("Invalid UTF-8 string")
+    }
+    let items = try JSONDecoder().decode([StarknetABIItem].self, from: data)
+    self.init(address: addressFelt, abi: items, provider: provider)
+  }
+
   // MARK: - Encode Call
 
   /// Build a StarknetCall from function name and CairoValue arguments.
