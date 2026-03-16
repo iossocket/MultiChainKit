@@ -66,6 +66,8 @@ public enum CairoABIError: Error, Sendable, Equatable, CustomStringConvertible {
   case argumentCountMismatch(expected: Int, got: Int)
   case noOutputTypes(String)
   case unsupportedEventKind(String)
+  case emptyResult
+  case conversionFailed(expected: String, got: String)
 
   public var description: String {
     switch self {
@@ -81,6 +83,8 @@ public enum CairoABIError: Error, Sendable, Equatable, CustomStringConvertible {
     case .argumentCountMismatch(let expected, let got): return "Cairo argument count mismatch: expected \(expected), got \(got)"
     case .noOutputTypes(let name): return "Cairo function has no output types: \(name)"
     case .unsupportedEventKind(let kind): return "Cairo unsupported event kind: \(kind)"
+    case .emptyResult: return "Empty result"
+    case .conversionFailed(let expected, let got): return "Conversion failed: expected \(expected), got \(got)"
     }
   }
 }

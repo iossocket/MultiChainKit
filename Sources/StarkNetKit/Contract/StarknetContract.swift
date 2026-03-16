@@ -101,7 +101,7 @@ public struct StarknetContract: Sendable {
   // MARK: - Read (starknet_call)
 
   /// Execute a read-only call and return raw Felt results.
-  public func callRaw(
+  public func readRaw(
     function name: String,
     args: [CairoValue] = [],
     block: StarknetBlockId = .latest
@@ -112,7 +112,7 @@ public struct StarknetContract: Sendable {
   }
 
   /// Execute a read-only call and decode results using the ABI output types.
-  public func call(
+  public func read(
     function name: String,
     args: [CairoValue] = [],
     block: StarknetBlockId = .latest
@@ -123,7 +123,7 @@ public struct StarknetContract: Sendable {
     guard !fn.outputs.isEmpty else {
       throw CairoABIError.noOutputTypes(name)
     }
-    let raw = try await callRaw(function: name, args: args, block: block)
+    let raw = try await readRaw(function: name, args: args, block: block)
     var results: [CairoValue] = []
     var offset = 0
     for output in fn.outputs {
@@ -133,6 +133,22 @@ public struct StarknetContract: Sendable {
       offset += consumed
     }
     return results
+  }
+
+  /// Read contract and return single value
+  public func readSingle<T>(
+    function name: String,
+    args: [CairoValue] = [],
+    block: StarknetBlockId = .latest
+  ) async throws -> T {
+    let results = try await read(function: name, args: args, block: block)
+    guard let first = results.first else {
+      throw CairoABIError.emptyResult
+    }
+    guard let value = first.as(T.self) else {
+      throw CairoABIError.conversionFailed(expected: "\(T.self)", got: "\(first)")
+    }
+    return value
   }
 
   // MARK: - Fee Estimation
@@ -230,10 +246,10 @@ public struct StarknetContract: Sendable {
     return StarknetDecodedEvent(name: name, keys: decodedKeys, data: decodedData)
   }
 
-  // MARK: - Invoke (Write)
+  // MARK: - Write Contract
 
   /// Encode a call, auto-fill nonce + fees, sign, and broadcast. Returns the invoke response.
-  public func invoke(
+  public func write(
     function name: String,
     args: [CairoValue] = [],
     account: StarknetAccount,

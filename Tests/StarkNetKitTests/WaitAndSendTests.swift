@@ -150,6 +150,6 @@ struct StarknetContractInvokeTests {
       abi: abi,
       provider: provider
     )
-    _ = type(of: contract).invoke
+    _ = type(of: contract).write
   }
 }
