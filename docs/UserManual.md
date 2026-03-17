@@ -733,18 +733,18 @@ let contract = try StarknetContract(address: contractFelt, abiJson: abiJson, pro
 
 ```swift
 // Decoded results (CairoValue)
-let results = try await contract.call(function: "balanceOf", args: [.felt(addressFelt)])
+let results = try await contract.read(function: "balanceOf", args: [.felt(addressFelt)])
 
 // Raw Felt results
-let raw = try await contract.callRaw(function: "balanceOf", args: [.felt(addressFelt)])
+let raw = try await contract.readRaw(function: "balanceOf", args: [.felt(addressFelt)])
 ```
 
-### 12.3 Write (Invoke)
+### 12.3 Write
 
-`invoke` handles nonce, fee estimation, signing, and broadcasting:
+`write` handles nonce, fee estimation, signing, and broadcasting:
 
 ```swift
-let response = try await contract.invoke(
+let response = try await contract.write(
     function: "transfer",
     args: [.felt(toFelt), .u256(low: amountLow, high: amountHigh)],
     account: account,
@@ -924,7 +924,7 @@ let wallet = try MultiChainWallet(
 | `Starknet`                                        | Chain definition; chainId (Felt), rpcURL, mainnet/sepolia/devnet     |
 | `StarknetAddress`                                 | 32-byte address; checksummed hex                                     |
 | `Felt`                                            | Field element (< 2^251 + 17*2^192 + 1); hex, arithmetic, Data       |
-| `StarknetContract`                                | Contract wrapper; call, callRaw, invoke, estimateFee, getEvents      |
+| `StarknetContract`                                | Contract wrapper; read, readRaw, write, estimateFee, getEvents   |
 | `CairoValue` / `CairoType`                       | Cairo type codec; encode/decode calldata for all Cairo types         |
 | `CairoByteArray`                                  | 31-byte chunk encoding for strings > 31 bytes                       |
 | `StarknetBlockId`                                 | latest / pending / number / hash                                     |

@@ -215,9 +215,9 @@ Implemented: `OpenZeppelinAccount`. Others (Argent, Braavos) can be added by con
 
 `StarknetContract` wraps an address + ABI + provider:
 
-- `call` / `callRaw` — starknet_call with decoded CairoValue or raw Felt results
+- `read` / `readRaw` — starknet_call with decoded CairoValue or raw Felt results
 - `encodeCall` — build StarknetCall for manual transaction building
-- `invoke` — encode + auto nonce/fee + sign + broadcast (convenience)
+- `write` — encode + auto nonce/fee + sign + broadcast (convenience)
 - `estimateFee` — fee estimation for a function call
 - `getEvents` / `decodeEvent` — fetch and decode events
 

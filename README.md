@@ -137,12 +137,12 @@ let receipt = try await provider.waitForTransaction(hash: response.transactionHa
 let contract = try StarknetContract(address: contractFelt, abiJson: abiJson, provider: provider)
 
 // Read (decoded CairoValue results)
-let results = try await contract.call(function: "balanceOf", args: [.felt(addressFelt)])
+let results = try await contract.read(function: "balanceOf", args: [.felt(addressFelt)])
 
 // Write (auto nonce + fee + sign + broadcast)
-let response = try await contract.invoke(function: "transfer",
-                                         args: [.felt(to), .u256(amount)],
-                                         account: account)
+let response = try await contract.write(function: "transfer",
+                                        args: [.felt(to), .u256(amount)],
+                                        account: account)
 
 // Events
 let (events, _) = try await contract.getEvents(eventName: "Transfer", fromBlock: .number(100_000))
@@ -186,7 +186,7 @@ MultiChainKit
 │   └── Types         # Wei, EvmChain, EthereumAddress, BlockTag, ABI, Events, Receipt
 ├── StarknetKit       # Starknet implementation
 │   ├── Account       # StarknetAccount (executeV3, estimateFee), OpenZeppelinAccount
-│   ├── Contract      # StarknetContract (call/invoke/estimateFee/getEvents), CairoValue, CairoType
+│   ├── Contract      # StarknetContract (read/write/estimateFee/getEvents), CairoValue, CairoType
 │   ├── Crypto        # StarkCurve, Pedersen, Poseidon, StarknetKeyDerivation
 │   ├── Extensions    # SNIP-12 typed data (v0 Pedersen, v1 Poseidon)
 │   ├── Provider      # StarknetProvider, StarknetRequestBuilder, waitForTransaction
@@ -213,7 +213,7 @@ MultiChainKit
 - InvokeV1/V3, DeployAccountV1/V3 transactions, signing and verification
 - Convenience: `executeV3` (auto nonce/fee), `estimateFee`, `waitForTransaction`
 - Provider (JSON-RPC), StarknetRequestBuilder for all RPC methods
-- StarknetContract (call/callRaw/invoke/estimateFee/getEvents/decodeEvent), CairoValue codec
+- StarknetContract (read/readRaw/write/estimateFee/getEvents/decodeEvent), CairoValue codec
 - SNIP-12 typed data signing (v0 Pedersen, v1 Poseidon)
 
 **MultiChainKit:**
