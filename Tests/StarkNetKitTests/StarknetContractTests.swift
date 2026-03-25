@@ -495,6 +495,29 @@ struct StarknetFeeEstimateTests {
     #expect(estimate.dataGasConsumed == "0x0")
     #expect(estimate.overallFee == "0x61c46800")
     #expect(estimate.feeUnit == "WEI")
+    #expect(estimate.effectiveGasConsumed == "0x1a4")
+    #expect(estimate.effectiveGasPrice == "0x3b9aca00")
+    #expect(estimate.effectiveDataGasConsumed == "0x0")
+    #expect(estimate.effectiveDataGasPrice == "0x1")
+  }
+
+  @Test("decode new RPC keys: l1/l2 + unit")
+  func decodeNewSchema() throws {
+    let json = """
+      {"l1_data_gas_consumed":"0xe0","l1_data_gas_price":"0xe203","l1_gas_consumed":"0x0","l1_gas_price":"0x349f851a357e","l2_gas_consumed":"0x191950","l2_gas_price":"0x1dcd65000","overall_fee":"0x2ec013c18ec2a0","unit":"FRI"}
+      """
+    let estimate = try JSONDecoder().decode(
+      StarknetFeeEstimate.self, from: json.data(using: .utf8)!)
+    #expect(estimate.l1GasConsumed == "0x0")
+    #expect(estimate.l1GasPrice == "0x349f851a357e")
+    #expect(estimate.l1DataGasConsumed == "0xe0")
+    #expect(estimate.l1DataGasPrice == "0xe203")
+    #expect(estimate.l2GasConsumed == "0x191950")
+    #expect(estimate.l2GasPrice == "0x1dcd65000")
+    #expect(estimate.overallFee == "0x2ec013c18ec2a0")
+    #expect(estimate.feeUnit == "FRI")
+    #expect(estimate.effectiveGasConsumed == "0x0")
+    #expect(estimate.effectiveDataGasConsumed == "0xe0")
   }
 
   @Test("overallFeeFelt parses hex")

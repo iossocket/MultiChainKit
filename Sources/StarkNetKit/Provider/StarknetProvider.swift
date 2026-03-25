@@ -307,26 +307,81 @@ public struct StarknetEventFilter: Encodable, Sendable {
 // MARK: - Fee Estimate Response
 
 public struct StarknetFeeEstimate: Decodable, Sendable, Equatable {
-  public let gasConsumed: String
-  public let gasPrice: String
-  public let dataGasConsumed: String
-  public let dataGasPrice: String
+  // Legacy (older RPCs)
+  public let gasConsumed: String?
+  public let gasPrice: String?
+  public let dataGasConsumed: String?
+  public let dataGasPrice: String?
+
+  // Current Starknet spec (e.g. Infura/Alchemy): split by L1/L2
+  public let l1GasConsumed: String?
+  public let l1GasPrice: String?
+  public let l1DataGasConsumed: String?
+  public let l1DataGasPrice: String?
+  public let l2GasConsumed: String?
+  public let l2GasPrice: String?
+
   public let overallFee: String
   public let feeUnit: String
 
   enum CodingKeys: String, CodingKey {
+    // Legacy keys
     case gasConsumed = "gas_consumed"
     case gasPrice = "gas_price"
     case dataGasConsumed = "data_gas_consumed"
     case dataGasPrice = "data_gas_price"
+
+    // New keys
+    case l1GasConsumed = "l1_gas_consumed"
+    case l1GasPrice = "l1_gas_price"
+    case l1DataGasConsumed = "l1_data_gas_consumed"
+    case l1DataGasPrice = "l1_data_gas_price"
+    case l2GasConsumed = "l2_gas_consumed"
+    case l2GasPrice = "l2_gas_price"
+
     case overallFee = "overall_fee"
+
+    // Some RPCs use "fee_unit", others use "unit"
     case feeUnit = "fee_unit"
+    case unit
+  }
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+
+    self.gasConsumed = try container.decodeIfPresent(String.self, forKey: .gasConsumed)
+    self.gasPrice = try container.decodeIfPresent(String.self, forKey: .gasPrice)
+    self.dataGasConsumed = try container.decodeIfPresent(String.self, forKey: .dataGasConsumed)
+    self.dataGasPrice = try container.decodeIfPresent(String.self, forKey: .dataGasPrice)
+
+    self.l1GasConsumed = try container.decodeIfPresent(String.self, forKey: .l1GasConsumed)
+    self.l1GasPrice = try container.decodeIfPresent(String.self, forKey: .l1GasPrice)
+    self.l1DataGasConsumed = try container.decodeIfPresent(String.self, forKey: .l1DataGasConsumed)
+    self.l1DataGasPrice = try container.decodeIfPresent(String.self, forKey: .l1DataGasPrice)
+    self.l2GasConsumed = try container.decodeIfPresent(String.self, forKey: .l2GasConsumed)
+    self.l2GasPrice = try container.decodeIfPresent(String.self, forKey: .l2GasPrice)
+
+    self.overallFee = try container.decode(String.self, forKey: .overallFee)
+
+    if let feeUnit = try container.decodeIfPresent(String.self, forKey: .feeUnit) {
+      self.feeUnit = feeUnit
+    } else if let unit = try container.decodeIfPresent(String.self, forKey: .unit) {
+      self.feeUnit = unit
+    } else {
+      self.feeUnit = ""
+    }
   }
 
   /// The overall fee as a Felt value.
   public var overallFeeFelt: Felt {
     Felt(overallFee) ?? .zero
   }
+
+  /// Prefer L1 fields (new RPCs) but fall back to legacy fields.
+  public var effectiveGasConsumed: String? { l1GasConsumed ?? gasConsumed }
+  public var effectiveGasPrice: String? { l1GasPrice ?? gasPrice }
+  public var effectiveDataGasConsumed: String? { l1DataGasConsumed ?? dataGasConsumed }
+  public var effectiveDataGasPrice: String? { l1DataGasPrice ?? dataGasPrice }
 }
 
 // MARK: - Events Response

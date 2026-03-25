@@ -52,18 +52,24 @@ public enum StarknetRequestBuilder {
 
   // MARK: - Fee Estimation
 
-  public static func estimateFeeRequest(invokeV1: StarknetInvokeV1) -> ChainRequest {
+  public static func estimateFeeRequest(
+    invokeV1: StarknetInvokeV1,
+    block: StarknetBlockId = .latest
+  ) -> ChainRequest {
     let tx = StarknetInvokeV1Param(tx: invokeV1)
     let txArray = [tx] as [StarknetInvokeV1Param]
     let simFlags = ["SKIP_VALIDATE"] as [String]
-    return ChainRequest(method: "starknet_estimateFee", params: [txArray, simFlags])
+    return ChainRequest(method: "starknet_estimateFee", params: [txArray, simFlags, block])
   }
 
-  public static func estimateFeeRequest(invokeV3: StarknetInvokeV3) -> ChainRequest {
+  public static func estimateFeeRequest(
+    invokeV3: StarknetInvokeV3,
+    block: StarknetBlockId = .latest
+  ) -> ChainRequest {
     let tx = StarknetInvokeV3Param(tx: invokeV3)
     let txArray = [tx] as [StarknetInvokeV3Param]
     let simFlags = ["SKIP_VALIDATE"] as [String]
-    return ChainRequest(method: "starknet_estimateFee", params: [txArray, simFlags])
+    return ChainRequest(method: "starknet_estimateFee", params: [txArray, simFlags, block])
   }
 
   // MARK: - Send Transactions
