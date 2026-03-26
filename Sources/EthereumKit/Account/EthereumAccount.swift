@@ -9,7 +9,7 @@ import MultiChainCore
 public struct EthereumAccount: Account, PrivateKeySigner, MnemonicSigner, Sendable {
   public typealias C = EvmChain
 
-  private let privateKey: Data
+  public let privateKey: Data
   public let provider: (any Provider<EvmChain>)?
 
   // MARK: - PrivateKeySigner
