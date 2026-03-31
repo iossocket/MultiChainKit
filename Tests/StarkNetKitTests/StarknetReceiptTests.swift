@@ -82,9 +82,9 @@ struct StarknetReceiptTests {
     let data = StarknetReceiptTests.invokeSuccessJSON.data(using: .utf8)!
     let receipt = try JSONDecoder().decode(StarknetReceipt.self, from: data)
 
-    #expect(receipt.actualFee.unit == "FRI")
-    #expect(receipt.actualFee.amountFelt != .zero)
-    #expect(receipt.actualFee.amount == "0x2386f26fc10000")
+    #expect(receipt.actualFee?.unit == "FRI")
+    #expect(receipt.actualFee?.amountFelt != .zero)
+    #expect(receipt.actualFee?.amount == "0x2386f26fc10000")
   }
 
   @Test("Events decoding")
@@ -112,8 +112,8 @@ struct StarknetReceiptTests {
     #expect(res.pedersenBuiltinApplications == 12)
     #expect(res.poseidonBuiltinApplications == nil)
     #expect(res.ecOpBuiltinApplications == nil)
-    #expect(res.dataAvailability.l1Gas == 0)
-    #expect(res.dataAvailability.l1DataGas == 128)
+    #expect(res.dataAvailability?.l1Gas == 0)
+    #expect(res.dataAvailability?.l1DataGas == 128)
   }
 
   // MARK: - Reverted Receipt
@@ -172,7 +172,7 @@ struct StarknetReceiptTests {
     #expect(receipt.blockNumber == nil)
     #expect(receipt.blockHash == nil)
     #expect(receipt.isSuccess)
-    #expect(receipt.actualFee.unit == "WEI")
+    #expect(receipt.actualFee?.unit == "WEI")
   }
 
   // MARK: - Deploy Account Receipt
@@ -298,5 +298,57 @@ struct StarknetReceiptTests {
     let receipt = try JSONDecoder().decode(StarknetReceipt.self, from: data)
 
     #expect(receipt.transactionHashFelt == Felt(0x0abc))
+  }
+
+  @Test("Decode receipt with new execution_resources gas shape")
+  func decodeNewExecutionResourcesShape() throws {
+    let json = """
+      {
+        "type": "INVOKE",
+        "transaction_hash": "0x1065873bbe9b7b06cf76765a787f18ddc20a48d1ce02794955584ae8a35d8b",
+        "actual_fee": { "amount": "0x284f0f3a863f80", "unit": "FRI" },
+        "execution_status": "SUCCEEDED",
+        "finality_status": "ACCEPTED_ON_L2",
+        "block_hash": "0x28f411c84f1f500ea19fc631d86315d04c464efa4727d0cb4dd5ddb371be808",
+        "block_number": 8265668,
+        "messages_sent": [],
+        "events": [],
+        "execution_resources": {
+          "l1_data_gas": 192,
+          "l1_gas": 0,
+          "l2_gas": 1418240
+        }
+      }
+      """
+    let data = json.data(using: .utf8)!
+    let receipt = try JSONDecoder().decode(StarknetReceipt.self, from: data)
+
+    #expect(receipt.isSuccess)
+    #expect(receipt.executionResources.l1DataGas == 192)
+    #expect(receipt.executionResources.l1Gas == 0)
+    #expect(receipt.executionResources.l2Gas == 1_418_240)
+    #expect(receipt.executionResources.steps == nil)
+    #expect(receipt.executionResources.dataAvailability == nil)
+  }
+
+  @Test("Decode receipt when execution_resources is missing")
+  func decodeMissingExecutionResources() throws {
+    let json = """
+      {
+        "type": "INVOKE",
+        "transaction_hash": "0x123",
+        "execution_status": "SUCCEEDED",
+        "finality_status": "ACCEPTED_ON_L2",
+        "messages_sent": [],
+        "events": []
+      }
+      """
+    let data = json.data(using: .utf8)!
+    let receipt = try JSONDecoder().decode(StarknetReceipt.self, from: data)
+
+    #expect(receipt.isSuccess)
+    #expect(receipt.executionResources.steps == nil)
+    #expect(receipt.executionResources.l1Gas == nil)
+    #expect(receipt.executionResources.dataAvailability == nil)
   }
 }

@@ -22,6 +22,9 @@ public protocol StarknetAccountType: Sendable {
 
   /// Compute the account contract address for a given public key and salt.
   func computeAddress(publicKey: Felt, salt: Felt) throws -> StarknetAddress
+
+  /// Format a raw ECDSA signature into the array format expected by this account's __validate__.
+  func formatSignature(_ sig: StarknetSignature, publicKey: Felt) -> [Felt]
 }
 
 // MARK: - Default address computation
@@ -37,6 +40,11 @@ extension StarknetAccountType {
       deployerAddress: .zero
     )
     return StarknetAddress(felt.bigEndianData)
+  }
+
+  /// Default: OZ-compatible [r, s]
+  public func formatSignature(_ sig: StarknetSignature, publicKey: Felt) -> [Felt] {
+    sig.feltArray
   }
 }
 
@@ -76,5 +84,10 @@ public struct ArgentAccount: StarknetAccountType {
   /// Calldata: [0 (Starknet signer variant), publicKey, 1 (guardian = None)]
   public func constructorCalldata(publicKey: Felt) -> [Felt] {
     [Felt.zero, publicKey, Felt(1)]
+  }
+
+  /// Argent format: [signerCount=1, signerType=0(Starknet), pubkey, r, s]
+  public func formatSignature(_ sig: StarknetSignature, publicKey: Felt) -> [Felt] {
+    [Felt(1), Felt.zero, publicKey, sig.r, sig.s]
   }
 }

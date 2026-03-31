@@ -19,12 +19,14 @@ public struct StarknetAccount: Account, Sendable {
   public let address: StarknetAddress
   public let chain: Starknet
   public let provider: (any Provider<Starknet>)?
+  public let accountType: (any StarknetAccountType)?
 
   // MARK: - Init
 
   public init(
     privateKey: Felt, address: StarknetAddress, chain: Starknet,
-    provider: (any Provider<Starknet>)? = nil
+    provider: (any Provider<Starknet>)? = nil,
+    accountType: (any StarknetAccountType)? = nil
   ) throws {
     guard privateKey != .zero else {
       throw StarkCurveError.invalidPrivateKey
@@ -33,26 +35,29 @@ public struct StarknetAccount: Account, Sendable {
     self.address = address
     self.chain = chain
     self.provider = provider
+    self.accountType = accountType
   }
 
   public init(
     privateKey: Data, address: StarknetAddress, chain: Starknet,
-    provider: (any Provider<Starknet>)? = nil
+    provider: (any Provider<Starknet>)? = nil,
+    accountType: (any StarknetAccountType)? = nil
   ) throws {
     let felt = Felt(privateKey)
-    try self.init(privateKey: felt, address: address, chain: chain, provider: provider)
+    try self.init(privateKey: felt, address: address, chain: chain, provider: provider, accountType: accountType)
   }
 
   public init(
     mnemonic: String, path: DerivationPath, address: StarknetAddress, chain: Starknet,
-    provider: (any Provider<Starknet>)? = nil
+    provider: (any Provider<Starknet>)? = nil,
+    accountType: (any StarknetAccountType)? = nil
   ) throws {
     guard BIP39.validate(mnemonic) else {
       throw CryptoError.invalidMnemonic
     }
     let seed = try BIP39.seed(from: mnemonic, password: "")
     let key = try StarknetKeyDerivation.derivePrivateKey(seed: seed, path: path)
-    try self.init(privateKey: key, address: address, chain: chain, provider: provider)
+    try self.init(privateKey: key, address: address, chain: chain, provider: provider, accountType: accountType)
   }
 
   /// Create account with auto-derived address from private key + account type.
@@ -69,7 +74,7 @@ public struct StarknetAccount: Account, Sendable {
       throw CryptoError.publicKeyDerivationFailed
     }
     let address = try accountType.computeAddress(publicKey: publicKey, salt: publicKey)
-    try self.init(privateKey: privateKey, address: address, chain: chain, provider: provider)
+    try self.init(privateKey: privateKey, address: address, chain: chain, provider: provider, accountType: accountType)
   }
 
   /// The sender address as Felt (for transaction building).
@@ -98,18 +103,19 @@ public struct StarknetAccount: Account, Sendable {
   public func sign(transaction: inout StarknetTransaction) throws {
     let hash = try transaction.transactionHashFelt()
     let sig = try sign(feltHash: hash)
+    let formatted = formatSig(sig)
     switch transaction {
     case .invokeV1(var tx):
-      tx.signature = sig.feltArray
+      tx.signature = formatted
       transaction = .invokeV1(tx)
     case .invokeV3(var tx):
-      tx.signature = sig.feltArray
+      tx.signature = formatted
       transaction = .invokeV3(tx)
     case .deployAccountV1(var tx):
-      tx.signature = sig.feltArray
+      tx.signature = formatted
       transaction = .deployAccountV1(tx)
     case .deployAccountV3(var tx):
-      tx.signature = sig.feltArray
+      tx.signature = formatted
       transaction = .deployAccountV3(tx)
     }
   }
@@ -188,7 +194,7 @@ public struct StarknetAccount: Account, Sendable {
     let hash = try tx.transactionHash()
     let sig = try sign(feltHash: hash)
     var signed = tx
-    signed.signature = sig.feltArray
+    signed.signature = formatSig(sig)
     return signed
   }
 
@@ -197,7 +203,7 @@ public struct StarknetAccount: Account, Sendable {
     let hash = try tx.transactionHash()
     let sig = try sign(feltHash: hash)
     var signed = tx
-    signed.signature = sig.feltArray
+    signed.signature = formatSig(sig)
     return signed
   }
 
@@ -206,7 +212,7 @@ public struct StarknetAccount: Account, Sendable {
     let hash = try tx.transactionHash()
     let sig = try sign(feltHash: hash)
     var signed = tx
-    signed.signature = sig.feltArray
+    signed.signature = formatSig(sig)
     return signed
   }
 
@@ -215,7 +221,7 @@ public struct StarknetAccount: Account, Sendable {
     let hash = try tx.transactionHash()
     let sig = try sign(feltHash: hash)
     var signed = tx
-    signed.signature = sig.feltArray
+    signed.signature = formatSig(sig)
     return signed
   }
 
@@ -283,6 +289,11 @@ public struct StarknetAccount: Account, Sendable {
     let dataGasConsumed = UInt64(dataGasConsumedHex.dropFirst(2), radix: 16) ?? 0
     let dataGasPrice = BigUInt(dataGasPriceHex.dropFirst(2), radix: 16) ?? 0
 
+    let l2GasConsumedHex = estimate.l2GasConsumed ?? "0x0"
+    let l2GasPriceHex = estimate.l2GasPrice ?? "0x0"
+    let l2GasConsumed = UInt64(l2GasConsumedHex.dropFirst(2), radix: 16) ?? 0
+    let l2GasPrice = BigUInt(l2GasPriceHex.dropFirst(2), radix: 16) ?? 0
+
     let l1Gas = StarknetResourceBounds(
       maxAmount: UInt64(Double(gasConsumed) * feeMultiplier),
       maxPricePerUnit: BigUInt(Double(gasPrice) * feeMultiplier)
@@ -291,13 +302,24 @@ public struct StarknetAccount: Account, Sendable {
       maxAmount: UInt64(Double(dataGasConsumed) * feeMultiplier),
       maxPricePerUnit: BigUInt(Double(dataGasPrice) * feeMultiplier)
     )
+    let l2Gas = StarknetResourceBounds(
+      maxAmount: UInt64(Double(l2GasConsumed) * feeMultiplier),
+      maxPricePerUnit: BigUInt(Double(l2GasPrice) * feeMultiplier)
+    )
     let resourceBounds = StarknetResourceBoundsMapping(
-      l1Gas: l1Gas, l2Gas: .zero, l1DataGas: l1DataGas)
+      l1Gas: l1Gas, l2Gas: l2Gas, l1DataGas: l1DataGas)
 
     return try await execute(calls: calls, resourceBounds: resourceBounds, nonce: nonce)
   }
 
   // MARK: - Private
+
+  private func formatSig(_ sig: StarknetSignature) -> [Felt] {
+    if accountType != nil, let pubKey = publicKeyFelt {
+      return accountType!.formatSignature(sig, publicKey: pubKey)
+    }
+    return sig.feltArray
+  }
 
   private func requireProvider() throws -> any Provider<Starknet> {
     guard let provider else {

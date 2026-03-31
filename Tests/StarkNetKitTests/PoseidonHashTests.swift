@@ -92,10 +92,10 @@ struct PoseidonHashTests {
 
   @Test("Poseidon hash: empty array")
   func hashEmpty() throws {
-    // poseidon_hash_many([]) == poseidon_hash_many([0]) per sponge padding
     let result = try Poseidon.hashMany([])
+    #expect(result == Felt("0x2272be0f580fd156823304800919530eaa97430e972d7213ee13f4fbf7a5dbc")!)
     let resultFromZero = try Poseidon.hashMany([.zero])
-    #expect(result == resultFromZero)
+    #expect(result != resultFromZero)
   }
 
   @Test("Poseidon hash: resource bounds encoded values")

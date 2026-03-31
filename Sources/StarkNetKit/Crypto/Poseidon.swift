@@ -22,10 +22,13 @@ public enum Poseidon {
   }
 
   /// Poseidon hash of an array of Felt values (sponge construction).
-  /// Empty input is equivalent to hashMany([0]) per sponge padding rules.
+  /// For empty input the sponge absorbs nothing, pads with 1, and permutes:
+  /// hades([1,0,0])[0] = 0x2272be0f580fd156823304800919530eaa97430e972d7213ee13f4fbf7a5dbc
   public static func hashMany(_ elements: [Felt]) throws -> Felt {
-    let input = elements.isEmpty ? [Felt.zero] : elements
-    let dataList = input.map { $0.littleEndianData }
+    if elements.isEmpty {
+      return Felt("0x2272be0f580fd156823304800919530eaa97430e972d7213ee13f4fbf7a5dbc")!
+    }
+    let dataList = elements.map { $0.littleEndianData }
     let result = try PoseidonHash.hash(dataList)
     return Felt(littleEndian: result)
   }
