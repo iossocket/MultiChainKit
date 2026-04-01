@@ -38,7 +38,7 @@ let package = Package(
         // secp256k1 elliptic curve for Ethereum
         .package(url: "https://github.com/GigaBitcoin/secp256k1.swift.git", from: "0.21.1"),
         // Starknet crypto (Pedersen, Poseidon, ECDSA) via Rust FFI
-        .package(url: "https://github.com/iossocket/StarknetCryptoSwift.git", from: "0.1.2")
+        .package(url: "https://github.com/iossocket/StarknetCryptoSwift.git", from: "0.1.3")
     ],
     targets: [
         // MARK: - Core Module
