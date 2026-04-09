@@ -277,37 +277,7 @@ public struct StarknetAccount: Account, Sendable {
 
     // Estimate fee
     let estimate = try await estimateFee(calls: calls, nonce: nonce)
-
-    // Compute resource bounds from estimate with multiplier
-    let gasConsumedHex = estimate.effectiveGasConsumed ?? "0x0"
-    let gasPriceHex = estimate.effectiveGasPrice ?? "0x0"
-    let dataGasConsumedHex = estimate.effectiveDataGasConsumed ?? "0x0"
-    let dataGasPriceHex = estimate.effectiveDataGasPrice ?? "0x0"
-
-    let gasConsumed = UInt64(gasConsumedHex.dropFirst(2), radix: 16) ?? 0
-    let gasPrice = BigUInt(gasPriceHex.dropFirst(2), radix: 16) ?? 0
-    let dataGasConsumed = UInt64(dataGasConsumedHex.dropFirst(2), radix: 16) ?? 0
-    let dataGasPrice = BigUInt(dataGasPriceHex.dropFirst(2), radix: 16) ?? 0
-
-    let l2GasConsumedHex = estimate.l2GasConsumed ?? "0x0"
-    let l2GasPriceHex = estimate.l2GasPrice ?? "0x0"
-    let l2GasConsumed = UInt64(l2GasConsumedHex.dropFirst(2), radix: 16) ?? 0
-    let l2GasPrice = BigUInt(l2GasPriceHex.dropFirst(2), radix: 16) ?? 0
-
-    let l1Gas = StarknetResourceBounds(
-      maxAmount: UInt64(Double(gasConsumed) * feeMultiplier),
-      maxPricePerUnit: BigUInt(Double(gasPrice) * feeMultiplier)
-    )
-    let l1DataGas = StarknetResourceBounds(
-      maxAmount: UInt64(Double(dataGasConsumed) * feeMultiplier),
-      maxPricePerUnit: BigUInt(Double(dataGasPrice) * feeMultiplier)
-    )
-    let l2Gas = StarknetResourceBounds(
-      maxAmount: UInt64(Double(l2GasConsumed) * feeMultiplier),
-      maxPricePerUnit: BigUInt(Double(l2GasPrice) * feeMultiplier)
-    )
-    let resourceBounds = StarknetResourceBoundsMapping(
-      l1Gas: l1Gas, l2Gas: l2Gas, l1DataGas: l1DataGas)
+    let resourceBounds = estimate.toResourceBounds(multiplier: feeMultiplier)
 
     return try await execute(calls: calls, resourceBounds: resourceBounds, nonce: nonce)
   }

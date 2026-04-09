@@ -121,6 +121,18 @@ struct StarknetProviderRequestTests {
     #expect(req.method == "starknet_addDeployAccountTransaction")
     #expect(req.params.count == 1)
   }
+
+  @Test("estimateFee DeployAccountV3 request method and params")
+  func estimateFeeDeployV3() {
+    let tx = StarknetDeployAccountV3(
+      classHash: Felt(0x111), contractAddressSalt: Felt(0x222),
+      constructorCalldata: [Felt(0x333)], resourceBounds: .zero,
+      nonce: .zero, chainId: Felt.fromShortString("SN_SEPOLIA")
+    )
+    let req = StarknetRequestBuilder.estimateFeeRequest(deployV3: tx)
+    #expect(req.method == "starknet_estimateFee")
+    #expect(req.params.count == 3)  // [txArray, simFlags, block]
+  }
 }
 
 // MARK: - Block ID Encoding

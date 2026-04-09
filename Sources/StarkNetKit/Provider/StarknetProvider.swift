@@ -3,6 +3,7 @@
 //  StarknetKit
 //
 
+import BigInt
 import Foundation
 import MultiChainCore
 
@@ -382,6 +383,35 @@ public struct StarknetFeeEstimate: Decodable, Sendable, Equatable {
   public var effectiveGasPrice: String? { l1GasPrice ?? gasPrice }
   public var effectiveDataGasConsumed: String? { l1DataGasConsumed ?? dataGasConsumed }
   public var effectiveDataGasPrice: String? { l1DataGasPrice ?? dataGasPrice }
+
+  /// Convert fee estimate to resource bounds with a safety multiplier.
+  public func toResourceBounds(multiplier: Double = 1.5) -> StarknetResourceBoundsMapping {
+    let l1Gas = StarknetResourceBounds(
+      maxAmount: parseHexUInt64(effectiveGasConsumed, multiplier: multiplier),
+      maxPricePerUnit: parseHexBigUInt(effectiveGasPrice, multiplier: multiplier)
+    )
+    let l1DataGas = StarknetResourceBounds(
+      maxAmount: parseHexUInt64(effectiveDataGasConsumed, multiplier: multiplier),
+      maxPricePerUnit: parseHexBigUInt(effectiveDataGasPrice, multiplier: multiplier)
+    )
+    let l2Gas = StarknetResourceBounds(
+      maxAmount: parseHexUInt64(l2GasConsumed, multiplier: multiplier),
+      maxPricePerUnit: parseHexBigUInt(l2GasPrice, multiplier: multiplier)
+    )
+    return StarknetResourceBoundsMapping(l1Gas: l1Gas, l2Gas: l2Gas, l1DataGas: l1DataGas)
+  }
+
+  private func parseHexUInt64(_ hex: String?, multiplier: Double) -> UInt64 {
+    guard let hex, hex.hasPrefix("0x") else { return 0 }
+    let value = UInt64(hex.dropFirst(2), radix: 16) ?? 0
+    return UInt64(Double(value) * multiplier)
+  }
+
+  private func parseHexBigUInt(_ hex: String?, multiplier: Double) -> BigUInt {
+    guard let hex, hex.hasPrefix("0x") else { return 0 }
+    let value = BigUInt(hex.dropFirst(2), radix: 16) ?? 0
+    return BigUInt(Double(value) * multiplier)
+  }
 }
 
 // MARK: - Events Response
