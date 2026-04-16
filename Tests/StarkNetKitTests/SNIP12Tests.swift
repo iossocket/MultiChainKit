@@ -326,3 +326,350 @@ struct SNIP12ErrorTests {
     }
   }
 }
+
+// MARK: - SNIP12 Decodable
+
+@Suite("SNIP12 Decodable")
+struct SNIP12DecodableTests {
+
+  @Test("decode v0 Mail and match starknet.js message hash")
+  func decodeV0MailMessageHashMatchesVector() throws {
+    let json = """
+    {
+      "types": {
+        "StarkNetDomain": [
+          {"name": "name", "type": "felt"},
+          {"name": "version", "type": "felt"},
+          {"name": "chainId", "type": "felt"}
+        ],
+        "Person": [
+          {"name": "name", "type": "felt"},
+          {"name": "wallet", "type": "felt"}
+        ],
+        "Mail": [
+          {"name": "from", "type": "Person"},
+          {"name": "to", "type": "Person"},
+          {"name": "contents", "type": "felt"}
+        ]
+      },
+      "primaryType": "Mail",
+      "domain": {
+        "name": "StarkNet Mail",
+        "version": "1",
+        "chainId": "1",
+        "revision": 0
+      },
+      "message": {
+        "from": {
+          "name": "Cow",
+          "wallet": "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826"
+        },
+        "to": {
+          "name": "Bob",
+          "wallet": "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB"
+        },
+        "contents": "Hello, Bob!"
+      }
+    }
+    """
+
+    let typedData = try JSONDecoder().decode(SNIP12TypedData.self, from: Data(json.utf8))
+    let hash = try typedData.messageHash(accountAddress: testAccount)
+
+    #expect(typedData.primaryType == "Mail")
+    #expect(typedData.domain == v0Domain)
+    #expect(hash == Felt("0x6fcff244f63e38b9d88b9e3378d44757710d1b244282b435cb472053c8d78d0")!)
+    #expect(typedData.message["contents"] == .felt(Felt.fromShortString("Hello, Bob!")))
+  }
+
+  @Test("decode v1 Example with revision string")
+  func decodeV1Example() throws {
+    let json = """
+    {
+      "types": {
+        "StarknetDomain": [
+          {"name": "name", "type": "shortstring"},
+          {"name": "version", "type": "shortstring"},
+          {"name": "chainId", "type": "shortstring"},
+          {"name": "revision", "type": "shortstring"}
+        ],
+        "Example": [
+          {"name": "someField", "type": "felt"},
+          {"name": "someOtherField", "type": "u128"}
+        ]
+      },
+      "primaryType": "Example",
+      "domain": {
+        "name": "StarkNet Mail",
+        "version": "1",
+        "chainId": "1",
+        "revision": "v1"
+      },
+      "message": {
+        "someField": "42",
+        "someOtherField": "0x64"
+      }
+    }
+    """
+
+    let typedData = try JSONDecoder().decode(SNIP12TypedData.self, from: Data(json.utf8))
+    let hash = try typedData.messageHash(accountAddress: testAccount)
+
+    #expect(typedData.domain == v1Domain)
+    #expect(typedData.message["someField"] == .felt(Felt(42)))
+    #expect(typedData.message["someOtherField"] == .u128(Felt(100)))
+    #expect(hash != Felt.zero)
+  }
+
+  @Test("decode primitive SNIP-12 values")
+  func decodePrimitiveValues() throws {
+    let json = """
+    {
+      "types": {
+        "StarknetDomain": [
+          {"name": "name", "type": "shortstring"},
+          {"name": "version", "type": "shortstring"},
+          {"name": "chainId", "type": "shortstring"},
+          {"name": "revision", "type": "shortstring"}
+        ],
+        "Test": [
+          {"name": "raw", "type": "felt"},
+          {"name": "active", "type": "bool"},
+          {"name": "label", "type": "shortstring"},
+          {"name": "amount", "type": "u128"},
+          {"name": "delta", "type": "i128"},
+          {"name": "contract", "type": "ContractAddress"},
+          {"name": "classHash", "type": "ClassHash"},
+          {"name": "time", "type": "timestamp"},
+          {"name": "entrypoint", "type": "selector"},
+          {"name": "note", "type": "string"},
+          {"name": "wide", "type": "u256"}
+        ]
+      },
+      "primaryType": "Test",
+      "domain": {
+        "name": "Primitives",
+        "version": "1",
+        "chainId": "SN_MAIN",
+        "revision": 1
+      },
+      "message": {
+        "raw": 42,
+        "active": true,
+        "label": "hello",
+        "amount": "1000",
+        "delta": "5",
+        "contract": "0xabc",
+        "classHash": "0x123",
+        "time": "1700000000",
+        "entrypoint": "transfer",
+        "note": "longer text",
+        "wide": {"low": "0x01", "high": "0x02"}
+      }
+    }
+    """
+
+    let typedData = try JSONDecoder().decode(SNIP12TypedData.self, from: Data(json.utf8))
+
+    #expect(typedData.message["raw"] == .felt(Felt(42)))
+    #expect(typedData.message["active"] == .bool(true))
+    #expect(typedData.message["label"] == .shortString("hello"))
+    #expect(typedData.message["amount"] == .u128(Felt(1000)))
+    #expect(typedData.message["delta"] == .i128(Felt(5)))
+    #expect(typedData.message["contract"] == .contractAddress(Felt(0xabc)))
+    #expect(typedData.message["classHash"] == .classHash(Felt(0x123)))
+    #expect(typedData.message["time"] == .timestamp(Felt(1_700_000_000)))
+    #expect(typedData.message["entrypoint"] == .selector("transfer"))
+    #expect(typedData.message["note"] == .string("longer text"))
+    #expect(typedData.message["wide"] == .u256(low: Felt(1), high: Felt(2)))
+  }
+
+  @Test("decode arrays and nested structs")
+  func decodeArraysAndNestedStructs() throws {
+    let json = """
+    {
+      "types": {
+        "StarkNetDomain": [
+          {"name": "name", "type": "felt"},
+          {"name": "version", "type": "felt"},
+          {"name": "chainId", "type": "felt"}
+        ],
+        "Person": [
+          {"name": "name", "type": "felt"},
+          {"name": "wallet", "type": "felt"}
+        ],
+        "Group": [
+          {"name": "members", "type": "Person*"},
+          {"name": "scores", "type": "felt*"}
+        ]
+      },
+      "primaryType": "Group",
+      "domain": {
+        "name": "Group",
+        "version": "1",
+        "chainId": "1"
+      },
+      "message": {
+        "members": [
+          {"name": "Alice", "wallet": "0x1"},
+          {"name": "Bob", "wallet": "0x2"}
+        ],
+        "scores": ["1", "2", "3"]
+      }
+    }
+    """
+
+    let typedData = try JSONDecoder().decode(SNIP12TypedData.self, from: Data(json.utf8))
+
+    guard case .array(let members) = typedData.message["members"] else {
+      Issue.record("members should decode as array")
+      return
+    }
+    guard case .struct(let firstMember) = members.first else {
+      Issue.record("first member should decode as struct")
+      return
+    }
+    guard case .array(let scores) = typedData.message["scores"] else {
+      Issue.record("scores should decode as array")
+      return
+    }
+    #expect(firstMember["name"] == .felt(Felt.fromShortString("Alice")))
+    #expect(firstMember["wallet"] == .felt(Felt(1)))
+    #expect(scores == [.felt(Felt(1)), .felt(Felt(2)), .felt(Felt(3))])
+  }
+
+  @Test("decode typed enum object")
+  func decodeTypedEnumObject() throws {
+    let json = """
+    {
+      "types": {
+        "StarkNetDomain": [
+          {"name": "name", "type": "felt"},
+          {"name": "version", "type": "felt"},
+          {"name": "chainId", "type": "felt"}
+        ],
+        "Action": [
+          {"name": "Transfer", "type": "(felt,u128)"},
+          {"name": "Cancel", "type": "()"}
+        ],
+        "Test": [
+          {"name": "action", "type": "Action"}
+        ]
+      },
+      "primaryType": "Test",
+      "domain": {
+        "name": "Enum",
+        "version": "1",
+        "chainId": "1"
+      },
+      "message": {
+        "action": {
+          "variant": "Transfer",
+          "values": ["0xabc", "100"]
+        }
+      }
+    }
+    """
+
+    let typedData = try JSONDecoder().decode(SNIP12TypedData.self, from: Data(json.utf8))
+
+    #expect(
+      typedData.message["action"]
+        == .enum(variant: "Transfer", values: [.felt(Felt(0xabc)), .u128(Felt(100))])
+    )
+  }
+
+  @Test("decode rejects missing fields")
+  func decodeMissingFieldThrows() {
+    let json = """
+    {
+      "types": {
+        "StarkNetDomain": [
+          {"name": "name", "type": "felt"},
+          {"name": "version", "type": "felt"},
+          {"name": "chainId", "type": "felt"}
+        ],
+        "Person": [
+          {"name": "name", "type": "felt"},
+          {"name": "wallet", "type": "felt"}
+        ]
+      },
+      "primaryType": "Person",
+      "domain": {
+        "name": "Missing",
+        "version": "1",
+        "chainId": "1"
+      },
+      "message": {
+        "name": "Alice"
+      }
+    }
+    """
+
+    #expect(throws: DecodingError.self) {
+      _ = try JSONDecoder().decode(SNIP12TypedData.self, from: Data(json.utf8))
+    }
+  }
+
+  @Test("decode rejects invalid felt")
+  func decodeInvalidFeltThrows() {
+    let json = """
+    {
+      "types": {
+        "StarkNetDomain": [
+          {"name": "name", "type": "felt"},
+          {"name": "version", "type": "felt"},
+          {"name": "chainId", "type": "felt"}
+        ],
+        "Test": [
+          {"name": "value", "type": "u128"}
+        ]
+      },
+      "primaryType": "Test",
+      "domain": {
+        "name": "Invalid",
+        "version": "1",
+        "chainId": "1"
+      },
+      "message": {
+        "value": "not-a-number"
+      }
+    }
+    """
+
+    #expect(throws: DecodingError.self) {
+      _ = try JSONDecoder().decode(SNIP12TypedData.self, from: Data(json.utf8))
+    }
+  }
+
+  @Test("decode rejects non-array for SNIP-12 array type")
+  func decodeNonArrayThrows() {
+    let json = """
+    {
+      "types": {
+        "StarkNetDomain": [
+          {"name": "name", "type": "felt"},
+          {"name": "version", "type": "felt"},
+          {"name": "chainId", "type": "felt"}
+        ],
+        "Test": [
+          {"name": "values", "type": "felt*"}
+        ]
+      },
+      "primaryType": "Test",
+      "domain": {
+        "name": "Invalid",
+        "version": "1",
+        "chainId": "1"
+      },
+      "message": {
+        "values": "1"
+      }
+    }
+    """
+
+    #expect(throws: DecodingError.self) {
+      _ = try JSONDecoder().decode(SNIP12TypedData.self, from: Data(json.utf8))
+    }
+  }
+}

@@ -80,7 +80,11 @@ extension EIP712TypedData: Decodable {
     let primaryType = try container.decode(String.self, forKey: .primaryType)
     let domain = try container.decode(EIP712Domain.self, forKey: .domain)
     let messageDict = try container.decode([String: JSONValue].self, forKey: .message)
-    let message = try EIP712TypedDataDecoder.parseMessage(messageDict, primaryType: primaryType, types: types)
+    let message = try EIP712TypedDataDecoder.parseRoot(
+      messageDict,
+      primaryType: primaryType,
+      types: types
+    )
     self.init(types: types, primaryType: primaryType, domain: domain, message: message)
   }
 }
@@ -88,15 +92,17 @@ extension EIP712TypedData: Decodable {
 // MARK: - Private Decoder
 
 private enum EIP712TypedDataDecoder {
-  static func parseMessage(
+  /// DFS root: parse the top-level message object using primaryType as the schema root.
+  static func parseRoot(
     _ raw: [String: JSONValue],
     primaryType: String,
     types: [String: [EIP712Type]]
   ) throws -> [String: EIP712Value] {
-    try parseStruct(raw, typeName: primaryType, types: types)
+    try parseStructFields(raw, typeName: primaryType, types: types)
   }
 
-  static func parseStruct(
+  /// Visit a struct branch: each field is a child node described by the type registry.
+  static func parseStructFields(
     _ raw: [String: JSONValue],
     typeName: String,
     types: [String: [EIP712Type]]
@@ -109,31 +115,42 @@ private enum EIP712TypedDataDecoder {
       guard let rawValue = raw[field.name] else {
         throw missingField(field.name, in: typeName)
       }
-      result[field.name] = try parseValue(rawValue, as: field.type, types: types)
+      result[field.name] = try parseNode(rawValue, type: field.type, types: types)
     }
     return result
   }
 
-  static func parseValue(
+  /// DFS visit function: dispatch the current JSON node by its EIP-712 type.
+  static func parseNode(
     _ raw: JSONValue,
-    as type: String,
+    type: String,
     types: [String: [EIP712Type]]
   ) throws -> EIP712Value {
     if isArrayType(type) {
-      return try parseArray(raw, as: type, types: types)
+      return try parseArrayNode(raw, type: type, types: types)
     }
     if types[type] != nil {
-      guard case .object(let dict) = raw else {
-        throw typeMismatch(expected: type, got: raw)
-      }
-      return .struct(try parseStruct(dict, typeName: type, types: types))
+      return try parseStructNode(raw, typeName: type, types: types)
     }
-    return try parsePrimitive(raw, as: type)
+    return try parseLeaf(raw, type: type)
   }
 
-  static func parseArray(
+  /// Visit a struct node value and wrap its parsed children as `.struct`.
+  static func parseStructNode(
     _ raw: JSONValue,
-    as type: String,
+    typeName: String,
+    types: [String: [EIP712Type]]
+  ) throws -> EIP712Value {
+    guard case .object(let object) = raw else {
+      throw typeMismatch(expected: typeName, got: raw)
+    }
+    return .struct(try parseStructFields(object, typeName: typeName, types: types))
+  }
+
+  /// Visit an array branch: every element is a child node with the element type.
+  static func parseArrayNode(
+    _ raw: JSONValue,
+    type: String,
     types: [String: [EIP712Type]]
   ) throws -> EIP712Value {
     guard case .array(let elements) = raw else {
@@ -143,13 +160,14 @@ private enum EIP712TypedDataDecoder {
       throw invalidValue("Fixed array size mismatch for \(type): expected \(expectedCount), got \(elements.count)")
     }
     let elementType = try self.arrayElementType(from: type)
-    let parsed = try elements.map { try parseValue($0, as: elementType, types: types) }
+    let parsed = try elements.map { try parseNode($0, type: elementType, types: types) }
     return .array(parsed)
   }
 
-  static func parsePrimitive(
+  /// Visit a primitive leaf node and convert it to the matching `EIP712Value`.
+  static func parseLeaf(
     _ raw: JSONValue,
-    as type: String
+    type: String
   ) throws -> EIP712Value {
     switch type {
     case "string":
