@@ -6,8 +6,8 @@ import PackageDescription
 let package = Package(
     name: "MultiChainKit",
     platforms: [
-        .iOS(.v14),
-        .macOS(.v12)
+        .iOS(.v16),
+        .macOS(.v13)
     ],
     products: [
         // Full SDK with all chains

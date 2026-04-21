@@ -130,16 +130,20 @@ public struct StarknetAccount: Account, Sendable {
     switch transaction {
     case .invokeV1(let tx):
       let param = StarknetInvokeV1Param(tx: tx)
-      request = ChainRequest(method: "starknet_addInvokeTransaction", params: [param])
+      request = ChainRequest(
+        method: "starknet_addInvokeTransaction", params: [param], isIdempotent: false)
     case .invokeV3(let tx):
       let param = StarknetInvokeV3Param(tx: tx)
-      request = ChainRequest(method: "starknet_addInvokeTransaction", params: [param])
+      request = ChainRequest(
+        method: "starknet_addInvokeTransaction", params: [param], isIdempotent: false)
     case .deployAccountV1(let tx):
       let param = StarknetDeployAccountV1Param(tx: tx)
-      request = ChainRequest(method: "starknet_addDeployAccountTransaction", params: [param])
+      request = ChainRequest(
+        method: "starknet_addDeployAccountTransaction", params: [param], isIdempotent: false)
     case .deployAccountV3(let tx):
       let param = StarknetDeployAccountV3Param(tx: tx)
-      request = ChainRequest(method: "starknet_addDeployAccountTransaction", params: [param])
+      request = ChainRequest(
+        method: "starknet_addDeployAccountTransaction", params: [param], isIdempotent: false)
     }
     let response: StarknetInvokeTransactionResponse = try await p.send(request: request)
     return response.transactionHash

@@ -20,20 +20,26 @@ public protocol Provider<C>: Sendable where C: Chain {
 
 public enum ProviderError: Error, Sendable, Equatable, CustomStringConvertible {
   case networkError(String)
+  /// HTTP non-2xx response. Body is included when available for error inspection / retry decisions.
+  case http(status: Int, body: Data?)
   case rpcError(code: Int, message: String)
   case decodingError(String)
   case invalidResponse
   case timeout
+  /// The request was cancelled (Task cancellation or URLError.cancelled).
+  case cancelled
   case emptyBatchRequest
   case emptyResult
 
   public var description: String {
     switch self {
     case .networkError(let msg): return "Network error: \(msg)"
+    case .http(let status, _): return "HTTP \(status)"
     case .rpcError(let code, let message): return "RPC error \(code): \(message)"
     case .decodingError(let msg): return "Decoding error: \(msg)"
     case .invalidResponse: return "Invalid response"
     case .timeout: return "Timeout"
+    case .cancelled: return "Cancelled"
     case .emptyBatchRequest: return "Empty batch request"
     case .emptyResult: return "Empty result"
     }
@@ -118,6 +124,98 @@ public struct AnyEncodable: Encodable, Sendable {
   }
 }
 
+// MARK: - RetryPolicy
+
+/// Describes how a `JsonRpcProvider` should retry failed RPC calls.
+///
+/// Only **idempotent** requests (`ChainRequest.isIdempotent == true`) are retried.
+/// Write methods (`eth_sendRawTransaction`, `starknet_addInvokeTransaction`, ...) must never
+/// be retried automatically: the node may have accepted the first submission and a retry can
+/// collide on nonce or double-spend.
+public struct RetryPolicy: Sendable, Equatable {
+  /// Total number of attempts, including the first one. `maxAttempts == 1` means no retry.
+  public let maxAttempts: Int
+  /// Base delay for the exponential backoff, in seconds. Typical: 0.2s.
+  public let baseDelay: TimeInterval
+  /// Upper bound on a single delay, in seconds. Typical: 5s.
+  public let maxDelay: TimeInterval
+  /// Multiplicative jitter fraction applied to each delay, in [0, 1].
+  /// e.g. `0.2` means the delay is scaled by a uniform random factor in `[0.8, 1.2]`.
+  /// Prevents thundering herds when many clients retry simultaneously.
+  public let jitter: Double
+  /// HTTP status codes that should trigger a retry.
+  /// Note: `429 Too Many Requests` is intentionally **NOT** retried by default.
+  /// Rate-limit conditions are persistent (seconds to minutes) and the caller has
+  /// better context to react (switch provider, back off at app layer, surface in UI).
+  /// Auto-retrying just burns quota and risks further penalty from the provider.
+  public let retryableHTTPStatusCodes: Set<Int>
+  /// JSON-RPC error codes that should trigger a retry (node-side transient errors).
+  public let retryableRPCErrorCodes: Set<Int>
+
+  public init(
+    maxAttempts: Int,
+    baseDelay: TimeInterval,
+    maxDelay: TimeInterval,
+    jitter: Double,
+    retryableHTTPStatusCodes: Set<Int>,
+    retryableRPCErrorCodes: Set<Int>
+  ) {
+    self.maxAttempts = maxAttempts
+    self.baseDelay = baseDelay
+    self.maxDelay = maxDelay
+    self.jitter = jitter
+    self.retryableHTTPStatusCodes = retryableHTTPStatusCodes
+    self.retryableRPCErrorCodes = retryableRPCErrorCodes
+  }
+
+  /// Sensible production default: 3 attempts, 200ms base, 5s cap, 20% jitter.
+  public static let `default` = RetryPolicy(
+    maxAttempts: 3,
+    baseDelay: 0.2,
+    maxDelay: 5.0,
+    jitter: 0.2,
+    retryableHTTPStatusCodes: [408, 500, 502, 503, 504],  // 429 intentionally omitted
+    retryableRPCErrorCodes: [-32603]  // JSON-RPC internal error
+  )
+
+  /// Disables retry entirely. Useful for opt-out at call sites.
+  public static let none = RetryPolicy(
+    maxAttempts: 1,
+    baseDelay: 0,
+    maxDelay: 0,
+    jitter: 0,
+    retryableHTTPStatusCodes: [],
+    retryableRPCErrorCodes: []
+  )
+
+  /// Returns the delay to wait **before** `attempt` (1-based).
+  /// `attempt == 1` is the first retry (i.e. after the initial try failed).
+  /// Implementation should compute `min(baseDelay * 2^(attempt-1), maxDelay)` and apply jitter.
+  public func delay(forAttempt attempt: Int) -> TimeInterval {
+    let exponential = baseDelay * pow(2.0, Double(attempt - 1))
+    let clamped = min(exponential, maxDelay)
+    let factor = Double.random(in: (1 - jitter)...(1 + jitter))
+    return clamped * factor
+  }
+
+  /// Whether the given error is eligible for retry under this policy.
+  /// `.cancelled` must never retry. Network transport errors (connection dropped, DNS, timeout)
+  /// are generally retryable. `.http` / `.rpcError` consult the whitelist sets.
+  public func shouldRetry(_ error: ProviderError) -> Bool {
+    switch error {
+    case .cancelled, .decodingError, .invalidResponse,
+         .emptyBatchRequest, .emptyResult:
+      return false
+    case .http(let status, _):
+      return retryableHTTPStatusCodes.contains(status)
+    case .rpcError(let code, _):
+      return retryableRPCErrorCodes.contains(code)
+    case .networkError, .timeout:
+      return maxAttempts > 1   // 传输层故障只要 policy 允许重试就重试
+    }
+  }
+}
+
 // MARK: - PollingConfig
 
 public struct PollingConfig: Sendable {
@@ -152,6 +250,12 @@ public protocol JsonRpcProvider: Provider {
 
 extension JsonRpcProvider {
   public func send<R: Decodable>(request: ChainRequest) async throws -> R {
+    do {
+      try Task.checkCancellation()
+    } catch {
+      throw ProviderError.cancelled
+    }
+
     let jsonRpc = JsonRpcRequest(id: 1, method: request.method, params: request.params)
     let body = try JSONEncoder().encode(jsonRpc)
 
@@ -160,13 +264,23 @@ extension JsonRpcProvider {
     urlRequest.httpBody = body
     urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-    let (data, response) = try await session.data(for: urlRequest)
+    let data: Data
+    let response: URLResponse
+    do {
+      (data, response) = try await session.data(for: urlRequest)
+    } catch let urlError as URLError where urlError.code == .cancelled {
+      throw ProviderError.cancelled
+    } catch is CancellationError {
+      throw ProviderError.cancelled
+    } catch {
+      throw ProviderError.networkError(error.localizedDescription)
+    }
 
     guard let httpResponse = response as? HTTPURLResponse else {
       throw ProviderError.invalidResponse
     }
     guard (200...299).contains(httpResponse.statusCode) else {
-      throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")
+      throw ProviderError.http(status: httpResponse.statusCode, body: data)
     }
 
     return try parseJsonRpcResponse(data)
@@ -177,6 +291,11 @@ extension JsonRpcProvider {
   >] {
     guard !requests.isEmpty else {
       throw ProviderError.emptyBatchRequest
+    }
+    do {
+      try Task.checkCancellation()
+    } catch {
+      throw ProviderError.cancelled
     }
 
     let batch = requests.enumerated().map { i, req in
@@ -189,13 +308,23 @@ extension JsonRpcProvider {
     urlRequest.httpBody = body
     urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-    let (data, response) = try await session.data(for: urlRequest)
+    let data: Data
+    let response: URLResponse
+    do {
+      (data, response) = try await session.data(for: urlRequest)
+    } catch let urlError as URLError where urlError.code == .cancelled {
+      throw ProviderError.cancelled
+    } catch is CancellationError {
+      throw ProviderError.cancelled
+    } catch {
+      throw ProviderError.networkError(error.localizedDescription)
+    }
 
     guard let httpResponse = response as? HTTPURLResponse else {
       throw ProviderError.invalidResponse
     }
     guard (200...299).contains(httpResponse.statusCode) else {
-      throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")
+      throw ProviderError.http(status: httpResponse.statusCode, body: data)
     }
 
     let responses: [JsonRpcResponse<R>]
@@ -214,6 +343,64 @@ extension JsonRpcProvider {
       }
       return .success(result)
     }
+  }
+
+  // MARK: - Retry Overloads
+
+  /// Send a single request with an explicit retry policy.
+  ///
+  /// - If `request.isIdempotent == false`, the policy is ignored and the request is attempted once.
+  /// - Between attempts, sleeps for `policy.delay(forAttempt:)`.
+  /// - Task cancellation during a backoff sleep maps to `ProviderError.cancelled`.
+  public func send<R: Decodable>(
+    request: ChainRequest,
+    retryPolicy policy: RetryPolicy
+  ) async throws -> R {
+    if !request.isIdempotent {
+      return try await self.send(request: request)
+    }
+    return try await performWithRetry(policy: policy) {
+      try await self.send(request: request)
+    }
+  }
+
+  /// Batch variant with the same retry semantics as the single-request overload.
+  /// The batch is retried as a whole only when **every** request in it is idempotent.
+  public func send<R: Decodable>(
+    requests: [ChainRequest],
+    retryPolicy policy: RetryPolicy
+  ) async throws -> [Swift.Result<R, ProviderError>] {
+    guard requests.allSatisfy(\.isIdempotent) else {
+      return try await send(requests: requests)
+    }
+    return try await performWithRetry(policy: policy) {
+      try await self.send(requests: requests)
+    }
+  }
+
+  private func performWithRetry<T>(
+    policy: RetryPolicy,
+    operation: () async throws -> T
+  ) async throws -> T {
+    for i in 0..<policy.maxAttempts {
+      do {
+        return try await operation()
+      } catch {
+        if let providerError = error as? ProviderError, !policy.shouldRetry(providerError) {
+          throw error
+        }
+        if i < policy.maxAttempts - 1 {
+          do {
+            try await Task.sleep(for: .seconds(policy.delay(forAttempt: i + 1)))
+          } catch {
+            throw ProviderError.cancelled
+          }
+        } else {
+          throw error
+        }
+      }
+    }
+    preconditionFailure("unreachable: loop must have returned or thrown")
   }
 
   /// Parse a single JSON-RPC response.

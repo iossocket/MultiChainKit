@@ -86,22 +86,24 @@ public enum StarknetRequestBuilder {
 
   public static func addInvokeTransactionRequest(invokeV1: StarknetInvokeV1) -> ChainRequest {
     let tx = StarknetInvokeV1Param(tx: invokeV1)
-    return ChainRequest(method: "starknet_addInvokeTransaction", params: [tx])
+    return ChainRequest(method: "starknet_addInvokeTransaction", params: [tx], isIdempotent: false)
   }
 
   public static func addInvokeTransactionRequest(invokeV3: StarknetInvokeV3) -> ChainRequest {
     let tx = StarknetInvokeV3Param(tx: invokeV3)
-    return ChainRequest(method: "starknet_addInvokeTransaction", params: [tx])
+    return ChainRequest(method: "starknet_addInvokeTransaction", params: [tx], isIdempotent: false)
   }
 
   public static func addDeployAccountTransactionRequest(deployV1: StarknetDeployAccountV1) -> ChainRequest {
     let tx = StarknetDeployAccountV1Param(tx: deployV1)
-    return ChainRequest(method: "starknet_addDeployAccountTransaction", params: [tx])
+    return ChainRequest(
+      method: "starknet_addDeployAccountTransaction", params: [tx], isIdempotent: false)
   }
 
   public static func addDeployAccountTransactionRequest(deployV3: StarknetDeployAccountV3) -> ChainRequest {
     let tx = StarknetDeployAccountV3Param(tx: deployV3)
-    return ChainRequest(method: "starknet_addDeployAccountTransaction", params: [tx])
+    return ChainRequest(
+      method: "starknet_addDeployAccountTransaction", params: [tx], isIdempotent: false)
   }
 
   // MARK: - Events

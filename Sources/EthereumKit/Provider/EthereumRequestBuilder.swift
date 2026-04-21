@@ -19,7 +19,7 @@ public enum EthereumRequestBuilder {
   }
 
   public static func sendRawTransactionRequest(_ rawTx: String) -> ChainRequest {
-    ChainRequest(method: "eth_sendRawTransaction", params: [rawTx])
+    ChainRequest(method: "eth_sendRawTransaction", params: [rawTx], isIdempotent: false)
   }
 
   public static func transactionReceiptRequest(hash: String) -> ChainRequest {
